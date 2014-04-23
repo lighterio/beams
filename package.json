@@ -1,0 +1,43 @@
+{
+  "name": "firepoll",
+  "description": "A long-polling Node.js server and client",
+  "keywords": [
+    "fire",
+    "poll",
+    "long",
+    "polling",
+    "lighter",
+    "lightweight",
+    "simple",
+    "fast",
+    "ajax",
+    "xhr",
+    "socket",
+    "io"
+  ],
+  "version": "0.0.0",
+  "main": "firepoll.js",
+  "homepage": "http://github.com/zerious/firepoll",
+  "repository": "git://github.com/zerious/firepoll.git",
+  "author": "Sam Eubank <sameubank@gmail.com>",
+  "contributors": [
+    "Sam Eubank <sameubank@gmail.com>"
+  ],
+  "engines": [
+    "node >= 0.2.6"
+  ],
+  "scripts": {
+    "test": "mocha",
+    "retest": "mocha --watch",
+    "cover": "istanbul cover _mocha",
+    "report": "open coverage/lcov-report/index.html",
+    "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "assert-plus": "~0.1.5",
+    "mocha": "~1.17.1",
+    "istanbul": "~0.2.6",
+    "express": "^3.4.8"
+  }
+}
