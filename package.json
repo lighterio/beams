@@ -1,9 +1,9 @@
 {
-  "name": "firepoll",
+  "name": "beams",
   "description": "A long-polling Node.js server and client",
   "keywords": [
-    "fire",
-    "poll",
+    "beam",
+    "beams",
     "long",
     "polling",
     "lighter",
@@ -16,9 +16,9 @@
     "io"
   ],
   "version": "0.0.0",
-  "main": "firepoll.js",
-  "homepage": "http://github.com/zerious/firepoll",
-  "repository": "git://github.com/zerious/firepoll.git",
+  "main": "beams.js",
+  "homepage": "http://github.com/zerious/beams",
+  "repository": "git://github.com/zerious/beams.git",
   "author": "Sam Eubank <sameubank@gmail.com>",
   "contributors": [
     "Sam Eubank <sameubank@gmail.com>"

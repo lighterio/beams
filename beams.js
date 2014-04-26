@@ -7,4 +7,4 @@ var api = module.exports;
 api.version = require('./package.json').version;
 
 
-// TODO: API for attaching FirePoll to Express, etc.
+// TODO: API for attaching Beams to Express, etc.
