@@ -1,5 +1,5 @@
 var assert = require('assert-plus');
-var firepoll = require('../firepoll');
+var beams = require('../beams');
 var fs = require('fs');
 
 describe('API', function () {
@@ -7,8 +7,8 @@ describe('API', function () {
 	describe('version', function () {
 		var packageVersion = packageJson.version;
 		it('should match package.json version (' + packageVersion + ')', function () {
-			var firepollVersion = firepoll.version;
-			assert.equal(firepollVersion, packageVersion);
+			var beamsVersion = beams.version;
+			assert.equal(beamsVersion, packageVersion);
 		});
 	});
 	describe('package.json', function () {
