@@ -19,3 +19,5 @@ test
 .idea
 .project
 .gitignore
+.DS_Store
+.cache

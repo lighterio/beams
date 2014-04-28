@@ -17,3 +17,5 @@ coverage
 
 .idea
 .project
+.DS_Store
+.cache
