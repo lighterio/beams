@@ -38,6 +38,18 @@
     "assert-plus": "~0.1.5",
     "mocha": "~1.17.1",
     "istanbul": "~0.2.6",
-    "express": "^3.4.8"
+    "express": "^3.4.8",
+    "zeriousify": "~0.0.1"
+  },
+  "bugs": {
+    "url": "http://github.com/zerious/beams/issues"
+  },
+  "license": "MIT",
+  "script": {
+    "test": "mocha",
+    "retest": "mocha --watch",
+    "cover": "istanbul cover _mocha",
+    "report": "open coverage/lcov-report/index.html",
+    "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage"
   }
 }
