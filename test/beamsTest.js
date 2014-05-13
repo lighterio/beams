@@ -1,7 +1,7 @@
-require('zeriousify').test();
 var assert = require('assert-plus');
 var api = require('../beams');
 
+require('zeriousify').test();
 
 var app, request, response;
 
