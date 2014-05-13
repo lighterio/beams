@@ -32,7 +32,6 @@ api.setApp = function setApp(app) {
 	 */
 	app.post('/BEAM', function (request, response) {
 		var query = request.query;
-		console.log(name + JSON.stringify(request.body));
 		var name = query.name;
 		var callbacks = api._callbacks[name];
 		if (callbacks) {
