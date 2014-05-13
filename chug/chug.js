@@ -7,9 +7,9 @@ require('figlet').text('Beams Client v' + exports.version, {font: 'Standard'}, f
 	figlet = figlet.replace(/\n/g, '\n *');
 
 	var source = require('chug')([
-		'node_modules/jymin/core/ajax.js',
-		'node_modules/jymin/core/collections.js',
-		'node_modules/jymin/core/logging.js',
+		'node_modules/jymin/scripts/ajax.js',
+		'node_modules/jymin/scripts/collections.js',
+		'node_modules/jymin/scripts/logging.js',
 		'scripts/beams-jymin.js'
 	]);
 
@@ -18,8 +18,8 @@ require('figlet').text('Beams Client v' + exports.version, {font: 'Standard'}, f
 			var locations = source.getLocations();
 			locations.forEach(function (location, index) {
 				locations[index] = location.replace(
-					/^.*\/node_modules\/([a-z]+)\/(.*?)$/,
-					' *   https://github.com/zerious/$1/blob/master/$2');
+					/^.*\/(node_modules|[Ww]ork[Ss]?p?a?c?e?)\/([a-z]+)\/(.*?)$/,
+					' *   https://github.com/zerious/$2/blob/master/$3');
 			});
 			asset.setContent(
 				"/**\n" +
@@ -36,18 +36,7 @@ require('figlet').text('Beams Client v' + exports.version, {font: 'Standard'}, f
 		})
 		.wrap('window')
 		.minify()
-		.each(function (asset) {
-			asset.content = addEval(asset.content);
-			asset.minifiedContent = addEval(asset.minifiedContent);
-		})
 		.write(cwd, 'beams-client.js')
 		.write(cwd, 'beams-client.min.js', 'minified');
 
 });
-
-function addEval(code) {
-	return code.replace(
-		/([$_a-z]+) ?= ?JSON\.parse\(([$_a-z]+)\)/i,
-		'eval("eval.J="+$2);$1=eval.J');
-}
-
