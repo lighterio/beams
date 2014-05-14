@@ -13,10 +13,10 @@ Beams is a long-polling Node.js server extension and client library.
 Here's a simple chat server and client:
 
 ```javascript
-var app = require('express')();
-app.listen(80);
+var server = require('express')();
+server.listen(80);
 var beams = require('beams');
-beams.setApp(app);
+beams.setServer(server);
 var messages = [];
 beams
 	.connect(function (beam) {
@@ -43,10 +43,10 @@ getBeams()
 
 ## API
 
-#### beams.setApp(App app)
-Pass an Express-like app to `setApp`, and it will create a Beams server on
-top of the app.
-`route` on any assets that you'd like to route via `app.get`
+#### beams.setServer(Server server)
+Pass an Express-like server to `setServer`, and it will create a Beams server on
+top of the server.
+`route` on any assets that you'd like to route via `server.get`
 
 #### beams.connect(function callback)
 Run a callback when a client connects.

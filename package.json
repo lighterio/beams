@@ -15,7 +15,7 @@
     "socket",
     "io"
   ],
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "beams.js",
   "homepage": "http://lighter.io/beams",
   "repository": "git://github.com/zerious/beams.git",
@@ -42,9 +42,9 @@
     "mocha": "1.18.2",
     "istanbul": "0.2.9",
     "express": "4.2.0",
-    "zeriousify": "0.1.3",
+    "zeriousify": "0.1.4",
     "coveralls": "2.10.0",
-    "chug": "0.1.12",
+    "chug": "0.1.14",
     "figlet": "1.0.8"
   },
   "bugs": {

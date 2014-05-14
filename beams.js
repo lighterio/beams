@@ -18,19 +18,19 @@ api._pollDuration = 3e4; // 30 seconds.
 /**
  * Accept an Express-like server and make it a Beams server as well.
  */
-api.setApp = function setApp(app) {
+api.setServer = function setServer(server) {
 
 	/**
 	 * Accept a client's long polling request.
 	 */
-	app.get('/BEAM', function (request, response) {
+	server.get('/BEAM', function (request, response) {
 		getClient(request, response);
 	});
 
 	/**
 	 * Receive data from a client, and trigger actions.
 	 */
-	app.post('/BEAM', function (request, response) {
+	server.post('/BEAM', function (request, response) {
 		var query = request.query;
 		var name = query.name;
 		var callbacks = api._callbacks[name];

@@ -3,12 +3,12 @@ var api = require('../beams');
 
 require('zeriousify').test();
 
-var app, request, response;
+var server, request, response;
 
 describe('Beams', function () {
 
 	beforeEach(function () {
-		app = {
+		server = {
 			get: function (path, callback) {
 				this._get = callback;
 			},
@@ -32,11 +32,11 @@ describe('Beams', function () {
 			}
 		};
 		api._clients = {};
-		api.setApp(app);
+		api.setServer(server);
 	});
 
-	it('.setApp', function () {
-		api.setApp(app);
+	it('.setServer', function () {
+		api.setServer(server);
 	});
 
 	it('.on', function () {
@@ -49,15 +49,15 @@ describe('Beams', function () {
 			name: 'snap'
 		};
 		request.body = 'crackle!';
-		app._get(request, response);
-		app._post(request, response);
+		server._get(request, response);
+		server._post(request, response);
 		assert.equal(out, 'crackle!');
 
 		api.on('snap', function (data) {
 			out += data;
 		});
 		request.body = 'pop!';
-		app._post(request, response);
+		server._post(request, response);
 		assert.equal(out, 'crackle!pop!pop!');
 	});
 
@@ -66,7 +66,7 @@ describe('Beams', function () {
 		api.connect(function() {
 			connected = true;
 		});
-		app._get(request, response);
+		server._get(request, response);
 	});
 
 	it('.emit', function () {
@@ -74,7 +74,7 @@ describe('Beams', function () {
 	});
 
 	it('get', function () {
-		app._get(request, response);
+		server._get(request, response);
 		var count, id, key;
 		count = 0;
 		for (key in api._clients) {
@@ -83,7 +83,7 @@ describe('Beams', function () {
 		}
 		assert.equal(count, 1);
 		request.query.id = id;
-		app._get(request, response);
+		server._get(request, response);
 		count = 0;
 		for (key in api._clients) {
 			count++;
@@ -92,11 +92,11 @@ describe('Beams', function () {
 	});
 
 	it('post', function () {
-		app._post(request, response);
+		server._post(request, response);
 	});
 
 	it('client', function () {
-		app._get(request, response);
+		server._get(request, response);
 		var client;
 		var clients = api._clients;
 		for (var key in clients) {
@@ -118,7 +118,7 @@ describe('Beams', function () {
 
 	it('timeout', function (done) {
 		api._pollDuration = 1;
-		app._get(request, response);
+		server._get(request, response);
 		setTimeout(done, 10);
 	});
 
