@@ -114,6 +114,14 @@ describe('Beams', function () {
 		client.buffer = '["ping","pong"]';
 		client.wait(request, response);
 		assert.equal(response.output, '[["ping","pong"]]');
+
+		// Verify that headers aren't rewritten.
+		client.buffer = '["no","set"]';
+		response._header = 'sent';
+		response.headers = {};
+		client.wait(request, response);
+		assert.equal(response.output, '[["no","set"]]');
+		assert.equal(JSON.stringify(response.headers), '{}');
 	});
 
 	it('timeout', function (done) {
