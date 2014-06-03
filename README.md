@@ -19,24 +19,24 @@ var beams = require('beams');
 beams.setServer(server);
 var messages = [];
 beams
-	.connect(function (beam) {
-		beam.emit('messages', messages);
-	})
-	.on('message', function (text) {
-		var message = {from: this.id, text: data};
-		messages.push(message);
-		beams.emit('messages', [message]);
-	});
+  .connect(function (beam) {
+    beam.emit('messages', messages);
+  })
+  .on('message', function (text) {
+    var message = {from: this.id, text: data};
+    messages.push(message);
+    beams.emit('messages', [message]);
+  });
 ```
 
 ```html
 <script src="http://localhost/beams-client.min.js"></script>
 <script>
 getBeams()
-	.on('messages', function (data) {
-		console.log(data);
-		beam.emit('my other event', { my: 'data' });
-	});
+  .on('messages', function (data) {
+    console.log(data);
+    beam.emit('my other event', { my: 'data' });
+  });
 </script>
 ```
 
