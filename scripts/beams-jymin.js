@@ -32,7 +32,7 @@ var getBeams = function () {
       if (!list) {
         list = callbacks[name] = [];
       }
-      list.push(callback);
+      push(list, callback);
       return client;
     },
 
