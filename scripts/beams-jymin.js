@@ -61,7 +61,7 @@ var getBeams = function () {
 
   // Poll for a new list of messages.
   function poll() {
-    getJson(endpoint, function (messages) {
+    getResponse(endpoint, 0, function (messages) {
       // Iterate through the messages, triggering events.
       forEach(messages, function (message) {
         var name = message[0];
@@ -75,7 +75,7 @@ var getBeams = function () {
       log('ERROR: Failed to connect (' + endpoint + ').');
       // Try again later.
       setTimeout(poll, BEAMS_RETRY_TIMEOUT);
-    });
+    }, 1);
   };
 
   // Trigger any related callbacks with received data.
