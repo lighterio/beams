@@ -32,7 +32,7 @@ require('figlet').text('Beams Client v' + exports.version, {font: 'Standard'}, f
         locations.join("\n") + "\n" +
         " */\n\n\n" +
         asset.getContent() + "\n" +
-        "window.getBeams = getBeams;\n").replace(/[\t ]*\n/g, '\n'));
+        "window.Beams = Beams;\n").replace(/[\t ]*\n/g, '\n'));
     })
     .wrap('window')
     .minify()

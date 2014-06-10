@@ -1,5 +1,5 @@
+var beams = require('../beams');
 var assert = require('assert-plus');
-var api = require('../beams');
 
 require('zeriousify').test();
 
@@ -17,7 +17,7 @@ describe('Beams', function () {
       }
     };
     request = {
-      url: '/BEAM',
+      url: '/beam',
       query: {}
     };
     response = {
@@ -31,29 +31,29 @@ describe('Beams', function () {
         this.output = data;
       }
     };
-    api._clients = {};
-    api.setServer(server);
+    beams.clients = {};
+    beams.setServer(server);
   });
 
   it('.setServer', function () {
-    api.setServer(server);
+      beams.setServer(server);
   });
 
   it('.on', function () {
     var out = '';
-    api.on('snap', function (data) {
+    beams.on('snap', function (data) {
       out += data;
     });
     request.query = {
       id: 1,
-      name: 'snap'
+      m: 'snap'
     };
-    request.body = 'crackle!';
     server._get(request, response);
+    request.body = 'crackle!';
     server._post(request, response);
     assert.equal(out, 'crackle!');
 
-    api.on('snap', function (data) {
+    beams.on('snap', function (data) {
       out += data;
     });
     request.body = 'pop!';
@@ -61,23 +61,42 @@ describe('Beams', function () {
     assert.equal(out, 'crackle!pop!pop!');
   });
 
+  it('.handle', function () {
+    var out = '';
+    request.query = {
+      id: 1,
+      m: 'snap'
+    };
+    request.body = '!';
+    function append(data) {
+      out += data;
+    }
+    beams.on('snap', append).on('snap', append);
+    server._post(request, response);
+    assert.equal(out, '!!')
+
+    beams.handle('snap', append).handle('snap', append);
+    server._post(request, response);
+    assert.equal(out, '!!!');
+  });
+
   it('.connect', function () {
     var connected = false;
-    api.connect(function() {
+    beams.connect(function() {
       connected = true;
     });
     server._get(request, response);
   });
 
   it('.emit', function () {
-    api.emit('ping', 'pong');
+    beams.emit('ping', 'pong');
   });
 
   it('get', function () {
     server._get(request, response);
     var count, id, key;
     count = 0;
-    for (key in api._clients) {
+    for (key in beams.clients) {
       count++;
       id = key;
     }
@@ -85,7 +104,7 @@ describe('Beams', function () {
     request.query.id = id;
     server._get(request, response);
     count = 0;
-    for (key in api._clients) {
+    for (key in beams.clients) {
       count++;
     }
     assert.equal(count, 1);
@@ -98,7 +117,7 @@ describe('Beams', function () {
   it('client', function () {
     server._get(request, response);
     var client;
-    var clients = api._clients;
+    var clients = beams.clients;
     for (var key in clients) {
       client = clients[key];
     }
@@ -106,8 +125,8 @@ describe('Beams', function () {
 
     // Create an existing buffer so it will be added to.
     client.buffer = '["ping","pong"]';
-    api.emit('bing', 'bong');
-    assert.equal(response.output, '[["ping","pong"],["bing","bong""]]');
+    beams.emit('bing', 'bong');
+    assert.equal(response.output, '[["ping","pong"],["bing","bong"]]');
 
     // Wait for data when there's already data, triggering an immediate emit.
     request.output = '';
@@ -125,7 +144,7 @@ describe('Beams', function () {
   });
 
   it('timeout', function (done) {
-    api._pollDuration = 1;
+    beams.pollTimeout = 1;
     server._get(request, response);
     setTimeout(done, 10);
   });

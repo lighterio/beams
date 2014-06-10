@@ -32,7 +32,7 @@ beams
 ```html
 <script src="http://localhost/beams-client.min.js"></script>
 <script>
-getBeams()
+Beams()
   .on('messages', function (data) {
     console.log(data);
     beam.emit('my other event', { my: 'data' });
@@ -56,8 +56,23 @@ When a message with a given name is received, run a callback on each client.
 The `callback` takes a `data` argument, and its `this` context is the client
 on which it is being run.
 
+#### beams.handle(string name, function callback)
+Remove any existing handlers for the specified message name, and replace
+with a single `callback`, like calling `beams.on` only once.  This is useful
+for frameworks that reload modules in dev mode rather than restarting the
+server.
+
 #### beams.emit(string name, object data)
 Send a named message with some data to every client.
 
 #### beams.each(callback)
 Run a callback on each client. The `callback` takes a `client` argument.
+
+#### Array beams.clients
+A list of the clients that are connected.
+
+#### Object beams.handlers
+Arrays of message handlers keyed by message name.
+
+#### number beams.pollTimeout
+How long (in milliseconds) to wait before forcing clients to reconnect.
