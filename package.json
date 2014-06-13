@@ -15,7 +15,7 @@
     "socket",
     "io"
   ],
-  "version": "0.0.10",
+  "version": "0.0.11",
   "main": "beams.js",
   "homepage": "http://lighter.io/beams",
   "repository": "git://github.com/zerious/beams.git",

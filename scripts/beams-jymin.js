@@ -47,7 +47,7 @@ var Beams = function () {
   };
 
   client._ON = client.on = function (name, callback) {
-    var list = callbacks[name]
+    var list = callbacks[name];
     if (!list) {
       list = callbacks[name] = [];
     }
@@ -92,21 +92,21 @@ var Beams = function () {
         trigger(name, data);
       });
       // Poll again.
-      poll();
+      addTimeout(Beams, poll, 0);
     },
     function (response) {
-      log('ERROR: Failed to connect (' + endpointUrl + ').');
+      error('Beams: Failed to connect (' + endpointUrl + ').');
       // Try again later.
-      setTimeout(poll, BEAMS_RETRY_TIMEOUT);
+      addTimeout(Beams, poll, BEAMS_RETRY_TIMEOUT);
     }, 1);
-  };
+  }
 
   // Trigger any related callbacks with received data.
   function trigger(name, data) {
     forEach(callbacks[name], function (callback) {
       callback.call(client, data);
     });
-  };
+  }
 
   // When a client connects, set the client id.
   client._CONNECT(function (data) {
