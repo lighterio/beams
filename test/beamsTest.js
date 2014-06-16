@@ -49,14 +49,14 @@ describe('Beams', function () {
       m: 'snap'
     };
     server._get(request, response);
-    request.body = 'crackle!';
+    request.body = {d: 'crackle!'};
     server._post(request, response);
     assert.equal(out, 'crackle!');
 
     beams.on('snap', function (data) {
       out += data;
     });
-    request.body = 'pop!';
+    request.body = {d: 'pop!'};
     server._post(request, response);
     assert.equal(out, 'crackle!pop!pop!');
   });
@@ -67,13 +67,13 @@ describe('Beams', function () {
       id: 1,
       m: 'snap'
     };
-    request.body = '!';
+    request.body = {d: '!'};
     function append(data) {
       out += data;
     }
     beams.on('snap', append).on('snap', append);
     server._post(request, response);
-    assert.equal(out, '!!')
+    assert.equal(out, '!!');
 
     beams.handle('snap', append).handle('snap', append);
     server._post(request, response);

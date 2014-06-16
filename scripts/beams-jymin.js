@@ -1,19 +1,28 @@
 /**
- * This file is used in conjunction with Jymin to form the Beams client.
+ * This file is used in conjunction with Jymin to form the Beams Beams.
  *
  * If you're already using Jymin, you can use this file with it.
- * Otherwise use ../beams-client.js which includes required Jymin functions.
+ * Otherwise use ../beams-Beams.js which includes required Jymin functions.
  */
 
 var BEAMS_RETRY_TIMEOUT = 1e3;
 
+/**
+ * "Beams" is a singleton function, on the window, decorated as an object.
+ */
 var Beams = function () {
 
-  // If we've already created a client, use it.
-  var client = Beams._CLIENT;
-  if (client) {
-    return client;
+  // Once Beams is invoked, it is accessible from outside, even when minified.
+  window.Beams = Beams;
+
+  // If we've already decorated the singleton, don't do it again.
+  if (Beams._ON) {
+    return Beams;
   }
+
+  //+env:debug
+  log('[Beams] Initializing client.');
+  //-env:debug
 
   // The beams server listens for GET and POST requests at /beam.
   var serverUrl = '/beam';
@@ -26,7 +35,7 @@ var Beams = function () {
   var callbacks = {};
 
   // If onReady gets called more than once, reset callbacks.
-  // When used with D6, calls to "client.on" should be inside onReady callbacks.
+  // When used with D6, calls to "Beams.on" should be inside onReady callbacks.
   var hasRendered = false;
   onReady(function () {
     if (hasRendered) {
@@ -38,25 +47,52 @@ var Beams = function () {
   // Keep a count of emissions so the server can de-duplicate.
   var n = 0;
 
-  // Create a client.
-  client = Beams._CLIENT = {};
+  /**
+   * Listen for messages from the server.
+   */
+  Beams._ON = Beams.on = function (name, callback) {
+    //+env:debug
+    log('[Beams] Listening for "' + name + '".');
+    //-env:debug
 
-  client._CONNECT = client.connect = function (callback) {
-    this._ON('connect', callback);
-    return client;
-  };
-
-  client._ON = client.on = function (name, callback) {
     var list = callbacks[name];
     if (!list) {
       list = callbacks[name] = [];
     }
     push(list, callback);
-    return client;
+    return Beams;
   };
 
-  client._EMIT = client.emit = function (name, data) {
-    // The server can use the count to ignore duplicates.
+  /**
+   * Listen for messages from the server.
+   */
+  Beams._HANDLE = Beams.handle = function (name, callback) {
+    //+env:debug
+    log('[Beams] Listening for "' + name + '" with a singular handler.');
+    //-env:debug
+    callbacks[name] = [callback];
+    return Beams;
+  };
+
+  /**
+   * Listen for "connect" messages.
+   */
+  Beams._CONNECT = Beams.connect = function (callback) {
+    this._ON('connect', callback);
+    return Beams;
+  };
+
+  /**
+   * Emit a message to the server via XHR POST.
+   */
+  Beams._EMIT = Beams.emit = function (name, data) {
+    data = stringify(data || {}, 0, 1);
+
+    //+env:debug
+    log('[Beams] Emitting "' + name + '": ' + data + '.');
+    //-env:debug
+
+    // The server can use the count for sequencing.
     n++;
     // Try to emit data to the server.
     function send() {
@@ -64,7 +100,7 @@ var Beams = function () {
         // Send the event name and emission number as URL params.
         endpointUrl + '&m=' + escape(name) + '&n=' + n,
         // Send the message data as POST body so we're not size-limited.
-        data || {},
+        'd=' + escape(data),
         // On success, there's nothing we need to do.
         doNothing,
         // On failure, retry.
@@ -73,54 +109,77 @@ var Beams = function () {
         }
       );
     }
-    if (client.id) {
+    if (Beams.id) {
       send();
     }
     else {
       emissions.push(send);
     }
-    return client;
+    return Beams;
   };
 
-  // Poll for a new list of messages.
+  /**
+   * Poll for new messages.
+   */
   function poll() {
-    getResponse(endpointUrl, 0, function (messages) {
-      // Iterate through the messages, triggering events.
-      forEach(messages, function (message) {
-        var name = message[0];
-        var data = message[1];
-        trigger(name, data);
-      });
-      // Poll again.
-      addTimeout(Beams, poll, 0);
-    },
-    function (response) {
-      error('Beams: Failed to connect (' + endpointUrl + ').');
-      // Try again later.
-      addTimeout(Beams, poll, BEAMS_RETRY_TIMEOUT);
-    }, 1);
+    //+env:debug
+    log('[Beams] Polling for messages.');
+    //-env:debug
+    getResponse(endpointUrl, onSuccess, onFailure);
   }
 
-  // Trigger any related callbacks with received data.
+  /**
+   * On success, iterate through messages, triggering events.
+   */
+  function onSuccess(messages) {
+    forEach(messages, function (message) {
+      var name = message[0];
+      var data = message[1];
+      trigger(name, data);
+    });
+    // Poll again.
+    addTimeout(Beams, poll, 0);
+  }
+
+  /**
+   * On failure, log if in a debug environment, and try again later.
+   */
+  function onFailure(response) {
+    // Try again later.
+    addTimeout(Beams, poll, BEAMS_RETRY_TIMEOUT);
+    //+env:debug
+    error('[Beams] Failed to connect to "' + endpointUrl + '".');
+    //-env:debug
+  }
+
+  /**
+   * Trigger any matching callbacks with received data.
+   */
   function trigger(name, data) {
+    //+env:debug
+    log('[Beams] Received "' + name + '": ' + stringify(data) + '.');
+    //-env:debug
     forEach(callbacks[name], function (callback) {
-      callback.call(client, data);
+      callback.call(Beams, data);
     });
   }
 
-  // When a client connects, set the client id.
-  client._CONNECT(function (data) {
-    decorateObject(client, data);
-    endpointUrl = serverUrl + '?id=' + client.id;
+  /**
+   * When we connect, set the client ID.
+   */
+  Beams._CONNECT(function (data) {
+    decorateObject(Beams, data);
+    endpointUrl = serverUrl + '?id=' + Beams.id;
 
-    // Now that we have the client ID, we can emit anything we queued.
-    emissions.forEach(function (send) {
+    // Now that we have the client ID, we can emit anything we had queued.
+    forEach(emissions, function (send) {
       send();
     });
     emissions = [];
   });
 
+  // Start polling.
   poll();
 
-  return client;
+  return Beams;
 };

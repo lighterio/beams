@@ -1,9 +1,9 @@
 /**
- *  ____                              ____ _ _            _            ___   ___   _ _
- * | __ )  ___  __ _ _ __ ___  ___   / ___| (_) ___ _ __ | |_  __   __/ _ \ / _ \ / / |
- * |  _ \ / _ \/ _` | '_ ` _ \/ __| | |   | | |/ _ \ '_ \| __| \ \ / / | | | | | || | |
- * | |_) |  __/ (_| | | | | | \__ \ | |___| | |  __/ | | | |_   \ V /| |_| | |_| || | |
- * |____/ \___|\__,_|_| |_| |_|___/  \____|_|_|\___|_| |_|\__|   \_/  \___(_)___(_)_|_|
+ *  ____                              ____ _ _            _            ___   ___   _ ____
+ * | __ )  ___  __ _ _ __ ___  ___   / ___| (_) ___ _ __ | |_  __   __/ _ \ / _ \ / |___ \
+ * |  _ \ / _ \/ _` | '_ ` _ \/ __| | |   | | |/ _ \ '_ \| __| \ \ / / | | | | | || | __) |
+ * | |_) |  __/ (_| | | | | | \__ \ | |___| | |  __/ | | | |_   \ V /| |_| | |_| || |/ __/
+ * |____/ \___|\__,_|_| |_| |_|___/  \____|_|_|\___|_| |_|\__|   \_/  \___(_)___(_)_|_____|
  *
  *
  * http://lighter.io/beams
@@ -12,7 +12,10 @@
  * Source files:
  *   https://github.com/zerious/jymin/blob/master/scripts/ajax.js
  *   https://github.com/zerious/jymin/blob/master/scripts/collections.js
+ *   https://github.com/zerious/jymin/blob/master/scripts/dates.js
  *   https://github.com/zerious/jymin/blob/master/scripts/logging.js
+ *   https://github.com/zerious/jymin/blob/master/scripts/strings.js
+ *   https://github.com/zerious/jymin/blob/master/scripts/types.js
  *   https://github.com/zerious/beams/blob/master/scripts/beams-jymin.js
  */
 
@@ -21,8 +24,17 @@
  * Empty handler.
  */
 var doNothing = function () {};
-var globalResponseSuccessHandler = doNothing;
-var globalResponseFailureHandler = doNothing;
+var responseSuccessHandler = doNothing;
+var responseFailureHandler = doNothing;
+
+/**
+ * Get an XMLHttpRequest object.
+ */
+var getXhr = function () {
+  var Xhr = window.XMLHttpRequest;
+  var ActiveX = window.ActiveXObject;
+  return Xhr ? new Xhr() : (ActiveX ? new ActiveX('Microsoft.XMLHTTP') : false);
+};
 
 /**
  * Make an AJAX request, and handle it with success or failure.
@@ -32,24 +44,15 @@ var getResponse = function (
   url,       // string:    The URL to request a response from.
   body,      // object|:   Data to post. The method is automagically "POST" if body is truey, otherwise "GET".
   onSuccess, // function|: Callback to run on success. `onSuccess(response, request)`.
-  onFailure, // function|: Callback to run on failure. `onFailure(response, request)`.
-  evalJson   // boolean|:  Whether to evaluate the response as JSON.
+  onFailure  // function|: Callback to run on failure. `onFailure(response, request)`.
 ) {
   // If the optional body argument is omitted, shuffle it out.
   if (isFunction(body)) {
-    evalJson = onFailure;
     onFailure = onSuccess;
     onSuccess = body;
     body = 0;
   }
-  var request;
-  if (window.XMLHttpRequest) {
-    request = new XMLHttpRequest();
-  } else if (window.ActiveXObject) {
-    request = new ActiveXObject('Microsoft.XMLHTTP');
-  } else {
-    return false;
-  }
+  var request = getXhr();
   if (request) {
     request.onreadystatechange = function() {
       if (request.readyState == 4) {
@@ -57,33 +60,13 @@ var getResponse = function (
         var status = request.status;
         var isSuccess = (status == 200);
         var callback = isSuccess ?
-          onSuccess || globalResponseSuccessHandler :
-          onFailure || globalResponseFailureHandler;
-        var response = request.responseText;
-        if (evalJson) {
-          var object;
-          if (status) {
-            try {
-              // Trick Uglify into thinking there's no eval.
-              var e = window.eval;
-              e('eval.J=' + response);
-              object = e.J;
-            }
-            catch (e) {
-              //+env:dev
-              error('Could not parse JSON: "' + response + '"');
-              //-env:dev
-              object = {_ERROR: '_BAD_JSON', _TEXT: response};
-            }
-          }
-          else {
-            object = {_ERROR: '_OFFLINE'};
-          }
-          object._STATUS = status;
-          object.request = request;
-          response = object;
-        }
-        callback(response, request);
+          onSuccess || responseSuccessHandler :
+          onFailure || responseFailureHandler;
+        var data = parse(request.responseText);
+        data._STATUS = status;
+        data._REQUEST = request;
+        data = data || {_ERROR: '_OFFLINE'};
+        callback(data);
       }
     };
     request.open(body ? 'POST' : 'GET', url, true);
@@ -94,49 +77,35 @@ var getResponse = function (
     getResponse._WAITING = (getResponse._WAITING || 0) + 1;
 
     // Record the original request URL.
-    request.url = url;
-
-    // TODO: Populate request.query with URL query params.
+    request._URL = url;
 
     // If it's a post, record the post body.
     if (body) {
-      request.body = body;
+      request._BODY = body;
     }
 
-    //
-    request._TIME = new Date();
+    // Record the time the request was made.
+    request._TIME = getTime();
+
     request.send(body || null);
   }
   return true;
-};
-
-/**
- * Request a JSON resource with a given URL.
- * @return boolean: True if AJAX is supported.
- */
-var getJson = function (
-  url,       // string:    The URL to request a response from.
-  body,      // object|:   Data to post. The method is automagically "POST" if body is truey, otherwise "GET".
-  onSuccess, // function|: Callback to run on success. `onSuccess(response, request)`.
-  onFailure  // function|: Callback to run on failure. `onFailure(response, request)`.
-) {
-  return getResponse(url, body, onSuccess, onFailure, true);
 };
 /**
  * Iterate over an array, and call a function on each item.
  */
 var forEach = function (
-  array,   // Array*:    The array to iterate over.
-  callback // Function*: The function to call on each item. `callback(item, index, array)`
+  array,   // Array:    The array to iterate over.
+  callback // Function: The function to call on each item. `callback(item, index, array)`
 ) {
-    if (array) {
-        for (var index = 0, length = getLength(array); index < length; index++) {
-            var result = callback(array[index], index, array);
-            if (result === false) {
-                break;
-            }
-        }
+  if (array) {
+    for (var index = 0, length = getLength(array); index < length; index++) {
+      var result = callback(array[index], index, array);
+      if (result === false) {
+        break;
+      }
     }
+  }
 };
 
 /**
@@ -146,14 +115,14 @@ var forIn = function (
   object,  // Object*:   The object to iterate over.
   callback // Function*: The function to call on each pair. `callback(value, key, object)`
 ) {
-    if (object) {
-        for (var key in object) {
-            var result = callback(object[key], key, object);
-            if (result === false) {
-                break;
-            }
-        }
+  if (object) {
+    for (var key in object) {
+      var result = callback(key, object[key], object);
+      if (result === false) {
+        break;
+      }
     }
+  }
 };
 
 /**
@@ -164,7 +133,7 @@ var decorateObject = function (
   decorations // Object: The object to iterate over.
 ) {
     if (object && decorations) {
-    forIn(decorations, function (value, key) {
+    forIn(decorations, function (key, value) {
       object[key] = value;
     });
     }
@@ -240,16 +209,28 @@ var push = function (
   return item;
 };
 
+/**
+ * Pop an item off an array.
+ * @return mixed: Popped item.
+ */
+var pop = function (
+  array // Array: The array to push the item into.
+) {
+  if (isArray(array)) {
+    return array.pop();
+  }
+};
+
 var merge = function (
   array, // Array:  The array to merge into.
   items  // mixed+: The items to merge into the array.
 ) {
+  // TODO: Use splice instead of pushes to get better performance?
+  var addToFirstArray = function (item) {
+    array.push(item);
+  };
   for (var i = 1, l = arguments.length; i < l; i++) {
-    items = arguments[i];
-    // TODO: Use splice instead of push to get better performance?
-    forEach(items, function (item) {
-      array.push(item);
-    });
+    forEach(arguments[i], addToFirstArray);
   }
 };
 
@@ -257,7 +238,7 @@ var merge = function (
  * Push padding values onto an array up to a specified length.
  * @return number: The number of padding values that were added.
  */
-var pad = function (
+var padArray = function (
   array,       // Array:  The array to check for items.
   padToLength, // number: The minimum number of items in the array.
   paddingValue // mixed|: The value to use as padding.
@@ -266,7 +247,7 @@ var pad = function (
   if (isArray(array)) {
     var startingLength = getLength(array);
     if (startingLength < length) {
-      paddingValue = isDefined(paddingValue) ? paddingValue : '';
+      paddingValue = isUndefined(paddingValue) ? '' : paddingValue;
       for (var index = startingLength; index < length; index++) {
         array.push(paddingValue);
         countAdded++;
@@ -274,6 +255,41 @@ var pad = function (
     }
   }
   return countAdded;
+};
+/**
+ * Get Unix epoch milliseconds from a date.
+ * @return integer: Epoch milliseconds.
+ */
+var getTime = function (
+  date // Date: Date object. (Default: now)
+) {
+  date = date || new Date();
+  return date.getTime();
+};
+
+/**
+ * Get Unix epoch milliseconds from a date.
+ * @return integer: Epoch milliseconds.
+ */
+var getIsoDate = function (
+  date // Date: Date object. (Default: now)
+) {
+  if (!date) {
+    date = new Date();
+  }
+  if (date.toISOString) {
+    date = date.toISOString();
+  }
+  else {
+    // Build an ISO date string manually in really old browsers.
+    var utcPattern = /^.*?(\d+) (\w+) (\d+) ([\d:]+).*?$/;
+    date = date.toUTCString().replace(utcPattern, function (a, d, m, y, t) {
+      m = zeroFill(date.getMonth(), 2);
+      t += '.' + zeroFill(date.getMilliseconds(), 3);
+      return y + '-' + m + '-' + d + 'T' + t + 'Z';
+    });
+  }
+  return date;
 };
 /**
  * Log values to the console, if it's available.
@@ -320,21 +336,277 @@ var ifConsole = function (method, args) {
   }
 };
 /**
- * This file is used in conjunction with Jymin to form the Beams client.
+ * Ensure a value is a string.
+ */
+var ensureString = function (
+  value
+) {
+  return isString(value) ? value : '' + value;
+};
+
+/**
+ * Return true if the string contains the given substring.
+ */
+var contains = function (
+  string,
+  substring
+) {
+  return ensureString(string).indexOf(substring) > -1;
+};
+
+/**
+ * Return true if the string starts with the given substring.
+ */
+var startsWith = function (
+  string,
+  substring
+) {
+  return ensureString(string).indexOf(substring) == 0; // jshint ignore:line
+};
+
+/**
+ * Trim the whitespace from a string.
+ */
+var trim = function (
+  string
+) {
+  return ensureString(string).replace(/^\s+|\s+$/g, '');
+};
+
+/**
+ * Split a string by commas.
+ */
+var splitByCommas = function (
+  string
+) {
+  return ensureString(string).split(',');
+};
+
+/**
+ * Split a string by spaces.
+ */
+var splitBySpaces = function (
+  string
+) {
+  return ensureString(string).split(' ');
+};
+
+/**
+ * Return a string, with asterisks replaced by values from a replacements array.
+ */
+var decorateString = function (
+  string,
+  replacements
+) {
+  string = ensureString(string);
+  forEach(replacements, function(replacement) {
+    string = string.replace('*', replacement);
+  });
+  return string;
+};
+
+/**
+ * Perform a RegExp match, and call a callback on the result;
+  */
+var match = function (
+  string,
+  pattern,
+  callback
+) {
+  var result = string.match(pattern);
+  if (result) {
+    callback.apply(string, result);
+  }
+};
+
+/**
+ * Reduce a string to its alphabetic characters.
+ */
+var extractLetters = function (
+  string
+) {
+  return ensureString(string).replace(/[^a-z]/ig, '');
+};
+
+/**
+ * Reduce a string to its numeric characters.
+ */
+var extractNumbers = function (
+  string
+) {
+  return ensureString(string).replace(/[^0-9]/g, '');
+};
+
+/**
+ * Returns a lowercase string.
+ */
+var lower = function (
+  object
+) {
+  return ensureString(object).toLowerCase();
+};
+
+/**
+ * Returns an uppercase string.
+ */
+var upper = function (
+  object
+) {
+  return ensureString(object).toUpperCase();
+};
+
+/**
+ * Return an escaped value for URLs.
+ */
+var escape = function (value) {
+  return encodeURIComponent(value);
+};
+
+/**
+ * Return an unescaped value from an escaped URL.
+ */
+var unescape = function (value) {
+  return decodeURIComponent(value);
+};
+
+/**
+ * Returns a query string generated by serializing an object and joined using a delimiter (defaults to '&')
+ */
+var buildQueryString = function (
+  object
+) {
+  var queryParams = [];
+  forIn(object, function(key, value) {
+    queryParams.push(escape(key) + '=' + escape(value));
+  });
+  return queryParams.join('&');
+};
+
+/**
+ * Return the browser version if the browser name matches or zero if it doesn't.
+ */
+var getBrowserVersionOrZero = function (
+  browserName
+) {
+  var match = new RegExp(browserName + '[ /](\\d+(\\.\\d+)?)', 'i').exec(navigator.userAgent);
+  return match ? +match[1] : 0;
+};
+/**
+ * Return true if a variable is a given type.
+ */
+var isType = function (
+  value, // mixed:  The variable to check.
+  type   // string: The type we're checking for.
+) {
+  return typeof value == type;
+};
+
+/**
+ * Return true if a variable is undefined.
+ */
+var isUndefined = function (
+  value // mixed:  The variable to check.
+) {
+  return isType(value, 'undefined');
+};
+
+/**
+ * Return true if a variable is boolean.
+ */
+var isBoolean = function (
+  value // mixed:  The variable to check.
+) {
+  return isType(value, 'boolean');
+};
+
+/**
+ * Return true if a variable is a number.
+ */
+var isNumber = function (
+  value // mixed:  The variable to check.
+) {
+  return isType(value, 'number');
+};
+
+/**
+ * Return true if a variable is a string.
+ */
+var isString = function (
+  value // mixed:  The variable to check.
+) {
+  return isType(value, 'string');
+};
+
+/**
+ * Return true if a variable is a function.
+ */
+var isFunction = function (
+  value // mixed:  The variable to check.
+) {
+  return isType(value, 'function');
+};
+
+/**
+ * Return true if a variable is an object.
+ */
+var isObject = function (
+  value // mixed:  The variable to check.
+) {
+  return isType(value, 'object');
+};
+
+/**
+ * Return true if a variable is an instance of a class.
+ */
+var isInstance = function (
+  value,     // mixed:  The variable to check.
+  protoClass // Class|: The class we'ere checking for.
+) {
+  return value instanceof (protoClass || Object);
+};
+
+/**
+ * Return true if a variable is an array.
+ */
+var isArray = function (
+  value // mixed:  The variable to check.
+) {
+  return isInstance(value, Array);
+};
+
+/**
+ * Return true if a variable is a date.
+ */
+var isDate = function (
+  value // mixed:  The variable to check.
+) {
+  return isInstance(value, Date);
+};
+/**
+ * This file is used in conjunction with Jymin to form the Beams Beams.
  *
  * If you're already using Jymin, you can use this file with it.
- * Otherwise use ../beams-client.js which includes required Jymin functions.
+ * Otherwise use ../beams-Beams.js which includes required Jymin functions.
  */
 
 var BEAMS_RETRY_TIMEOUT = 1e3;
 
+/**
+ * "Beams" is a singleton function, on the window, decorated as an object.
+ */
 var Beams = function () {
 
-  // If we've already created a client, use it.
-  var client = Beams._CLIENT;
-  if (client) {
-    return client;
+  // Once Beams is invoked, it is accessible from outside, even when minified.
+  window.Beams = Beams;
+
+  // If we've already decorated the singleton, don't do it again.
+  if (Beams._ON) {
+    return Beams;
   }
+
+  //+env:debug
+  log('[Beams] Initializing client.');
+  //-env:debug
 
   // The beams server listens for GET and POST requests at /beam.
   var serverUrl = '/beam';
@@ -347,7 +619,7 @@ var Beams = function () {
   var callbacks = {};
 
   // If onReady gets called more than once, reset callbacks.
-  // When used with D6, calls to "client.on" should be inside onReady callbacks.
+  // When used with D6, calls to "Beams.on" should be inside onReady callbacks.
   var hasRendered = false;
   onReady(function () {
     if (hasRendered) {
@@ -359,25 +631,52 @@ var Beams = function () {
   // Keep a count of emissions so the server can de-duplicate.
   var n = 0;
 
-  // Create a client.
-  client = Beams._CLIENT = {};
+  /**
+   * Listen for messages from the server.
+   */
+  Beams._ON = Beams.on = function (name, callback) {
+    //+env:debug
+    log('[Beams] Listening for "' + name + '".');
+    //-env:debug
 
-  client._CONNECT = client.connect = function (callback) {
-    this._ON('connect', callback);
-    return client;
-  };
-
-  client._ON = client.on = function (name, callback) {
     var list = callbacks[name];
     if (!list) {
       list = callbacks[name] = [];
     }
     push(list, callback);
-    return client;
+    return Beams;
   };
 
-  client._EMIT = client.emit = function (name, data) {
-    // The server can use the count to ignore duplicates.
+  /**
+   * Listen for messages from the server.
+   */
+  Beams._HANDLE = Beams.handle = function (name, callback) {
+    //+env:debug
+    log('[Beams] Listening for "' + name + '" with a singular handler.');
+    //-env:debug
+    callbacks[name] = [callback];
+    return Beams;
+  };
+
+  /**
+   * Listen for "connect" messages.
+   */
+  Beams._CONNECT = Beams.connect = function (callback) {
+    this._ON('connect', callback);
+    return Beams;
+  };
+
+  /**
+   * Emit a message to the server via XHR POST.
+   */
+  Beams._EMIT = Beams.emit = function (name, data) {
+    data = stringify(data || {}, 0, 1);
+
+    //+env:debug
+    log('[Beams] Emitting "' + name + '": ' + data + '.');
+    //-env:debug
+
+    // The server can use the count for sequencing.
     n++;
     // Try to emit data to the server.
     function send() {
@@ -385,7 +684,7 @@ var Beams = function () {
         // Send the event name and emission number as URL params.
         endpointUrl + '&m=' + escape(name) + '&n=' + n,
         // Send the message data as POST body so we're not size-limited.
-        data || {},
+        'd=' + escape(data),
         // On success, there's nothing we need to do.
         doNothing,
         // On failure, retry.
@@ -394,56 +693,79 @@ var Beams = function () {
         }
       );
     }
-    if (client.id) {
+    if (Beams.id) {
       send();
     }
     else {
       emissions.push(send);
     }
-    return client;
+    return Beams;
   };
 
-  // Poll for a new list of messages.
+  /**
+   * Poll for new messages.
+   */
   function poll() {
-    getResponse(endpointUrl, 0, function (messages) {
-      // Iterate through the messages, triggering events.
-      forEach(messages, function (message) {
-        var name = message[0];
-        var data = message[1];
-        trigger(name, data);
-      });
-      // Poll again.
-      addTimeout(Beams, poll, 0);
-    },
-    function (response) {
-      error('Beams: Failed to connect (' + endpointUrl + ').');
-      // Try again later.
-      addTimeout(Beams, poll, BEAMS_RETRY_TIMEOUT);
-    }, 1);
+    //+env:debug
+    log('[Beams] Polling for messages.');
+    //-env:debug
+    getResponse(endpointUrl, onSuccess, onFailure);
   }
 
-  // Trigger any related callbacks with received data.
+  /**
+   * On success, iterate through messages, triggering events.
+   */
+  function onSuccess(messages) {
+    forEach(messages, function (message) {
+      var name = message[0];
+      var data = message[1];
+      trigger(name, data);
+    });
+    // Poll again.
+    addTimeout(Beams, poll, 0);
+  }
+
+  /**
+   * On failure, log if in a debug environment, and try again later.
+   */
+  function onFailure(response) {
+    // Try again later.
+    addTimeout(Beams, poll, BEAMS_RETRY_TIMEOUT);
+    //+env:debug
+    error('[Beams] Failed to connect to "' + endpointUrl + '".');
+    //-env:debug
+  }
+
+  /**
+   * Trigger any matching callbacks with received data.
+   */
   function trigger(name, data) {
+    //+env:debug
+    log('[Beams] Received "' + name + '": ' + stringify(data) + '.');
+    //-env:debug
     forEach(callbacks[name], function (callback) {
-      callback.call(client, data);
+      callback.call(Beams, data);
     });
   }
 
-  // When a client connects, set the client id.
-  client._CONNECT(function (data) {
-    decorateObject(client, data);
-    endpointUrl = serverUrl + '?id=' + client.id;
+  /**
+   * When we connect, set the client ID.
+   */
+  Beams._CONNECT(function (data) {
+    decorateObject(Beams, data);
+    endpointUrl = serverUrl + '?id=' + Beams.id;
 
-    // Now that we have the client ID, we can emit anything we queued.
-    emissions.forEach(function (send) {
+    // Now that we have the client ID, we can emit anything we had queued.
+    forEach(emissions, function (send) {
       send();
     });
     emissions = [];
   });
 
+  // Start polling.
   poll();
 
-  return client;
+  return Beams;
 };
 
 window.Beams = Beams;

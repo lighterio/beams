@@ -9,7 +9,10 @@ require('figlet').text('Beams Client v' + exports.version, {font: 'Standard'}, f
   var source = require('chug')([
     'node_modules/jymin/scripts/ajax.js',
     'node_modules/jymin/scripts/collections.js',
+    'node_modules/jymin/scripts/dates.js',
     'node_modules/jymin/scripts/logging.js',
+    'node_modules/jymin/scripts/strings.js',
+    'node_modules/jymin/scripts/types.js',
     'scripts/beams-jymin.js'
   ]);
 

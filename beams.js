@@ -33,12 +33,21 @@ beams.setServer = function setServer(server) {
    */
   server.post('/beam', function (request, response) {
     var query = request.query;
-    var data = request.body;
+    var body = request.body;
+    var data = body ? body.d : null;
     var clientId = query.id;
     var client = beams.clients[clientId];
     var messageName = query.m;
     var emissionNumber = query.n;
     var callbacks = beams.handlers[messageName];
+    if (data) {
+      try {
+        data = JSON.parse(data);
+      }
+      catch (e) {
+        // Couldn't parse, so call with exactly what we received.
+      }
+    }
     if (callbacks) {
       callbacks.forEach(function (callback) {
         callback.call(beams, data, client, emissionNumber);
