@@ -39,7 +39,7 @@ var Beams = function () {
   var hasRendered = false;
   onReady(function () {
     if (hasRendered) {
-      callbacks = {};
+      callbacks = {connect: onConnect};
     }
     hasRendered = true;
   });
@@ -78,7 +78,7 @@ var Beams = function () {
    * Listen for "connect" messages.
    */
   Beams._CONNECT = Beams.connect = function (callback) {
-    this._ON('connect', callback);
+    Beams._ON('connect', callback);
     return Beams;
   };
 
@@ -123,7 +123,7 @@ var Beams = function () {
    */
   function poll() {
     //+env:debug
-    log('[Beams] Polling for messages.');
+    log('[Beams] Polling for messages at "' + endpointUrl + '".');
     //-env:debug
     getResponse(endpointUrl, onSuccess, onFailure);
   }
@@ -167,16 +167,21 @@ var Beams = function () {
   /**
    * When we connect, set the client ID.
    */
-  Beams._CONNECT(function (data) {
-    decorateObject(Beams, data);
+  function onConnect(data) {
+    Beams.id = data.id;
     endpointUrl = serverUrl + '?id=' + Beams.id;
+    //+env:debug
+    log('[Beams] Set endpoint URL to "' + endpointUrl + '".');
+    //-env:debug
 
     // Now that we have the client ID, we can emit anything we had queued.
     forEach(emissions, function (send) {
       send();
     });
     emissions = [];
-  });
+  }
+
+  Beams._CONNECT(onConnect);
 
   // Start polling.
   poll();

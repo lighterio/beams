@@ -15,7 +15,7 @@
     "socket",
     "io"
   ],
-  "version": "0.0.12",
+  "version": "0.0.13",
   "main": "beams.js",
   "homepage": "http://lighter.io/beams",
   "repository": "git://github.com/zerious/beams.git",
@@ -35,7 +35,7 @@
     "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage"
   },
   "dependencies": {
-    "jymin": "0.2.5"
+    "jymin": "0.2.6"
   },
   "devDependencies": {
     "assert-plus": "0.1.5",
@@ -44,7 +44,7 @@
     "express": "4.4.3",
     "zeriousify": "0.1.5",
     "coveralls": "2.10.0",
-    "chug": "0.1.30",
+    "chug": "0.1.31",
     "figlet": "1.0.9"
   },
   "bugs": {
