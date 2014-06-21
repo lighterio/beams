@@ -86,7 +86,7 @@ var Beams = function () {
    * Emit a message to the server via XHR POST.
    */
   Beams._EMIT = Beams.emit = function (name, data) {
-    data = stringify(data || {}, 0, 1);
+    data = stringify(data || {}, 1);
 
     //+env:debug
     log('[Beams] Emitting "' + name + '": ' + data + '.');

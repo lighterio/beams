@@ -1,9 +1,9 @@
 /**
- *  ____                              ____ _ _            _            ___   ___   _ ____
- * | __ )  ___  __ _ _ __ ___  ___   / ___| (_) ___ _ __ | |_  __   __/ _ \ / _ \ / |___ \
- * |  _ \ / _ \/ _` | '_ ` _ \/ __| | |   | | |/ _ \ '_ \| __| \ \ / / | | | | | || | __) |
- * | |_) |  __/ (_| | | | | | \__ \ | |___| | |  __/ | | | |_   \ V /| |_| | |_| || |/ __/
- * |____/ \___|\__,_|_| |_| |_|___/  \____|_|_|\___|_| |_|\__|   \_/  \___(_)___(_)_|_____|
+ *  ____                              ____ _ _            _            ___   ___   _ _  _
+ * | __ )  ___  __ _ _ __ ___  ___   / ___| (_) ___ _ __ | |_  __   __/ _ \ / _ \ / | || |
+ * |  _ \ / _ \/ _` | '_ ` _ \/ __| | |   | | |/ _ \ '_ \| __| \ \ / / | | | | | || | || |_
+ * | |_) |  __/ (_| | | | | | \__ \ | |___| | |  __/ | | | |_   \ V /| |_| | |_| || |__   _|
+ * |____/ \___|\__,_|_| |_| |_|___/  \____|_|_|\___|_| |_|\__|   \_/  \___(_)___(_)_|  |_|
  *
  *
  * http://lighter.io/beams
@@ -24,6 +24,8 @@
  * Empty handler.
  */
 var doNothing = function () {};
+
+// TODO: Enable multiple handlers using "bind" or perhaps middlewares.
 var responseSuccessHandler = doNothing;
 var responseFailureHandler = doNothing;
 
@@ -54,8 +56,13 @@ var getResponse = function (
   }
   var request = getXhr();
   if (request) {
+    onFailure = onFailure || responseFailureHandler;
+    onSuccess = onSuccess || responseSuccessHandler;
     request.onreadystatechange = function() {
       if (request.readyState == 4) {
+        //+env:debug
+        log('[Jymin] Received response from "' + url + '". (' + getResponse._WAITING + ' in progress).');
+        //-env:debug
         --getResponse._WAITING;
         var status = request.status;
         var isSuccess = (status == 200);
@@ -65,7 +72,6 @@ var getResponse = function (
         var data = parse(request.responseText);
         data._STATUS = status;
         data._REQUEST = request;
-        data = data || {_ERROR: '_OFFLINE'};
         callback(data);
       }
     };
@@ -74,7 +80,6 @@ var getResponse = function (
     if (body) {
       request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
     }
-    getResponse._WAITING = (getResponse._WAITING || 0) + 1;
 
     // Record the original request URL.
     request._URL = url;
@@ -87,7 +92,14 @@ var getResponse = function (
     // Record the time the request was made.
     request._TIME = getTime();
 
+    // Allow applications to back off when too many requests are in progress.
+    getResponse._WAITING = (getResponse._WAITING || 0) + 1;
+
+    //+env:debug
+    log('[Jymin] Sending request to "' + url + '". (' + getResponse._WAITING + ' in progress).');
+    //-env:debug
     request.send(body || null);
+
   }
   return true;
 };
@@ -109,6 +121,23 @@ var forEach = function (
 };
 
 /**
+ * Iterate over an array, and call a callback with (index, value), as in jQuery.each
+ */
+var each = function (
+  array,   // Array:    The array to iterate over.
+  callback // Function: The function to call on each item. `callback(item, index, array)`
+) {
+  if (array) {
+    for (var index = 0, length = getLength(array); index < length; index++) {
+      var result = callback(index, array[index], array);
+      if (result === false) {
+        break;
+      }
+    }
+  }
+};
+
+/**
  * Iterate over an object's keys, and call a function on each key value pair.
  */
 var forIn = function (
@@ -118,6 +147,23 @@ var forIn = function (
   if (object) {
     for (var key in object) {
       var result = callback(key, object[key], object);
+      if (result === false) {
+        break;
+      }
+    }
+  }
+};
+
+/**
+ * Iterate over an object's keys, and call a function on each (value, key) pair.
+ */
+var forOf = function (
+  object,  // Object*:   The object to iterate over.
+  callback // Function*: The function to call on each pair. `callback(value, key, object)`
+) {
+  if (object) {
+    for (var key in object) {
+      var result = callback(object[key], key, object);
       if (result === false) {
         break;
       }
@@ -623,7 +669,7 @@ var Beams = function () {
   var hasRendered = false;
   onReady(function () {
     if (hasRendered) {
-      callbacks = {};
+      callbacks = {connect: onConnect};
     }
     hasRendered = true;
   });
@@ -662,7 +708,7 @@ var Beams = function () {
    * Listen for "connect" messages.
    */
   Beams._CONNECT = Beams.connect = function (callback) {
-    this._ON('connect', callback);
+    Beams._ON('connect', callback);
     return Beams;
   };
 
@@ -670,7 +716,7 @@ var Beams = function () {
    * Emit a message to the server via XHR POST.
    */
   Beams._EMIT = Beams.emit = function (name, data) {
-    data = stringify(data || {}, 0, 1);
+    data = stringify(data || {}, 1);
 
     //+env:debug
     log('[Beams] Emitting "' + name + '": ' + data + '.');
@@ -707,7 +753,7 @@ var Beams = function () {
    */
   function poll() {
     //+env:debug
-    log('[Beams] Polling for messages.');
+    log('[Beams] Polling for messages at "' + endpointUrl + '".');
     //-env:debug
     getResponse(endpointUrl, onSuccess, onFailure);
   }
@@ -751,16 +797,21 @@ var Beams = function () {
   /**
    * When we connect, set the client ID.
    */
-  Beams._CONNECT(function (data) {
-    decorateObject(Beams, data);
+  function onConnect(data) {
+    Beams.id = data.id;
     endpointUrl = serverUrl + '?id=' + Beams.id;
+    //+env:debug
+    log('[Beams] Set endpoint URL to "' + endpointUrl + '".');
+    //-env:debug
 
     // Now that we have the client ID, we can emit anything we had queued.
     forEach(emissions, function (send) {
       send();
     });
     emissions = [];
-  });
+  }
+
+  Beams._CONNECT(onConnect);
 
   // Start polling.
   poll();
