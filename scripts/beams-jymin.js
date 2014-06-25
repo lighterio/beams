@@ -135,7 +135,7 @@ var Beams = function () {
     forEach(messages, function (message) {
       var name = message[0];
       var data = message[1];
-      trigger(name, data);
+      triggerCallbacks(name, data);
     });
     // Poll again.
     addTimeout(Beams, poll, 0);
@@ -155,12 +155,19 @@ var Beams = function () {
   /**
    * Trigger any matching callbacks with received data.
    */
-  function trigger(name, data) {
+  function triggerCallbacks(name, data) {
     //+env:debug
     log('[Beams] Received "' + name + '": ' + stringify(data) + '.');
     //-env:debug
     forEach(callbacks[name], function (callback) {
-      callback.call(Beams, data);
+      if (isFunction(callback)) {
+        callback.call(Beams, data);
+      }
+      else {
+        //+env:debug
+        error('[Beams] Handler for "' + name + '" is not a function: ' + stringify(callback) + '.');
+        //-env:debug
+      }
     });
   }
 
