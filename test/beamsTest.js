@@ -1,5 +1,4 @@
 var beams = require('../beams');
-var assert = require('assert-plus');
 
 require('zeriousify').test();
 
@@ -51,14 +50,14 @@ describe('Beams', function () {
     server._get(request, response);
     request.body = {d: 'crackle!'};
     server._post(request, response);
-    assert.equal(out, 'crackle!');
+    is(out, 'crackle!');
 
     beams.on('snap', function (data) {
       out += data;
     });
     request.body = {d: 'pop!'};
     server._post(request, response);
-    assert.equal(out, 'crackle!pop!pop!');
+    is(out, 'crackle!pop!pop!');
   });
 
   it('.handle', function () {
@@ -73,11 +72,11 @@ describe('Beams', function () {
     }
     beams.on('snap', append).on('snap', append);
     server._post(request, response);
-    assert.equal(out, '!!');
+    is(out, '!!');
 
     beams.handle('snap', append).handle('snap', append);
     server._post(request, response);
-    assert.equal(out, '!!!');
+    is(out, '!!!');
   });
 
   it('.connect', function () {
@@ -100,14 +99,14 @@ describe('Beams', function () {
       count++;
       id = key;
     }
-    assert.equal(count, 1);
+    is(count, 1);
     request.query.id = id;
     server._get(request, response);
     count = 0;
     for (key in beams.clients) {
       count++;
     }
-    assert.equal(count, 1);
+    is(count, 1);
   });
 
   it('post', function () {
@@ -126,21 +125,21 @@ describe('Beams', function () {
     // Create an existing buffer so it will be added to.
     client.buffer = '["ping","pong"]';
     beams.emit('bing', 'bong');
-    assert.equal(response.output, '[["ping","pong"],["bing","bong"]]');
+    is(response.output, '[["ping","pong"],["bing","bong"]]');
 
     // Wait for data when there's already data, triggering an immediate emit.
     request.output = '';
     client.buffer = '["ping","pong"]';
     client.wait(request, response);
-    assert.equal(response.output, '[["ping","pong"]]');
+    is(response.output, '[["ping","pong"]]');
 
     // Verify that headers aren't rewritten.
     client.buffer = '["no","set"]';
     response._header = 'sent';
     response.headers = {};
     client.wait(request, response);
-    assert.equal(response.output, '[["no","set"]]');
-    assert.equal(JSON.stringify(response.headers), '{}');
+    is(response.output, '[["no","set"]]');
+    is(JSON.stringify(response.headers), '{}');
   });
 
   it('timeout', function (done) {
