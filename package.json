@@ -18,7 +18,7 @@
   "version": "0.0.16",
   "main": "beams.js",
   "homepage": "http://lighter.io/beams",
-  "repository": "git://github.com/zerious/beams.git",
+  "repository": "git://github.com/lighterio/beams.git",
   "author": "Sam Eubank <sameubank@gmail.com>",
   "contributors": [
     "Sam Eubank <sameubank@gmail.com>"
@@ -40,18 +40,18 @@
     "exam": "0.0.5",
     "istanbul": "0.2.11",
     "express": "4.4.4",
-    "zeriousify": "0.1.8",
+    "zeriousify": "0.1.9",
     "coveralls": "2.10.1",
     "chug": "0.1.35",
     "figlet": "1.0.9"
   },
   "bugs": {
-    "url": "http://github.com/zerious/beams/issues"
+    "url": "http://github.com/lighterio/beams/issues"
   },
   "licenses": [
     {
       "type": "MIT",
-      "url": "http://github.com/zerious/beams/blob/master/MIT-LICENSE.md"
+      "url": "http://github.com/lighterio/beams/blob/master/MIT-LICENSE.md"
     }
   ]
 }

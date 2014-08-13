@@ -10,13 +10,13 @@
  * MIT License
  *
  * Source files:
- *   https://github.com/zerious/jymin/blob/master/scripts/ajax.js
- *   https://github.com/zerious/jymin/blob/master/scripts/collections.js
- *   https://github.com/zerious/jymin/blob/master/scripts/dates.js
- *   https://github.com/zerious/jymin/blob/master/scripts/logging.js
- *   https://github.com/zerious/jymin/blob/master/scripts/strings.js
- *   https://github.com/zerious/jymin/blob/master/scripts/types.js
- *   https://github.com/zerious/beams/blob/master/scripts/beams-jymin.js
+ *   https://github.com/lighterio/jymin/blob/master/scripts/ajax.js
+ *   https://github.com/lighterio/jymin/blob/master/scripts/collections.js
+ *   https://github.com/lighterio/jymin/blob/master/scripts/dates.js
+ *   https://github.com/lighterio/jymin/blob/master/scripts/logging.js
+ *   https://github.com/lighterio/jymin/blob/master/scripts/strings.js
+ *   https://github.com/lighterio/jymin/blob/master/scripts/types.js
+ *   https://github.com/lighterio/beams/blob/master/scripts/beams-jymin.js
  */
 
 

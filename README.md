@@ -1,10 +1,10 @@
 # Beams
 
 [![NPM Version](https://badge.fury.io/js/beams.png)](http://badge.fury.io/js/beams)
-[![Build Status](https://travis-ci.org/zerious/beams.png?branch=master)](https://travis-ci.org/zerious/beams)
-[![Code Coverage](https://coveralls.io/repos/zerious/beams/badge.png?branch=master)](https://coveralls.io/r/zerious/beams)
-[![Dependencies](https://david-dm.org/zerious/beams.png?theme=shields.io)](https://david-dm.org/zerious/beams)
-[![Support](http://img.shields.io/gittip/zerious.png)](https://www.gittip.com/zerious/)
+[![Build Status](https://travis-ci.org/lighterio/beams.png?branch=master)](https://travis-ci.org/lighterio/beams)
+[![Code Coverage](https://coveralls.io/repos/lighterio/beams/badge.png?branch=master)](https://coveralls.io/r/lighterio/beams)
+[![Dependencies](https://david-dm.org/lighterio/beams.png?theme=shields.io)](https://david-dm.org/lighterio/beams)
+[![Support](http://img.shields.io/gittip/zerious.png)](https://www.gittip.com/lighterio/)
 
 Beams is a long-polling Node.js server extension and client library.
 
