@@ -1,10 +1,10 @@
 # Beams
 
-[![NPM Version](https://badge.fury.io/js/beams.png)](http://badge.fury.io/js/beams)
-[![Build Status](https://travis-ci.org/lighterio/beams.png?branch=master)](https://travis-ci.org/lighterio/beams)
-[![Code Coverage](https://coveralls.io/repos/lighterio/beams/badge.png?branch=master)](https://coveralls.io/r/lighterio/beams)
-[![Dependencies](https://david-dm.org/lighterio/beams.png?theme=shields.io)](https://david-dm.org/lighterio/beams)
-[![Support](http://img.shields.io/gittip/zerious.png)](https://www.gittip.com/lighterio/)
+[![NPM Version](https://img.shields.io/npm/v/beams.svg) ![Downloads](https://img.shields.io/npm/dm/beams.svg)](https://npmjs.org/package/beams)
+[![Build Status](https://img.shields.io/travis/lighterio/beams.svg)](https://travis-ci.org/lighterio/beams)
+[![Code Coverage](https://img.shields.io/coveralls/lighterio/beams/master.svg)](https://coveralls.io/r/lighterio/beams)
+[![Dependencies](https://img.shields.io/david/lighterio/beams.svg)](https://david-dm.org/lighterio/beams)
+[![Support](https://img.shields.io/gratipay/Lighter.io.svg)](https://gratipay.com/Lighter.io/)
 
 Beams is a long-polling Node.js server extension and client library.
 

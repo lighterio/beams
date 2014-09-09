@@ -37,7 +37,7 @@
     "jymin": "0.3.0"
   },
   "devDependencies": {
-    "exam": "0.0.5",
+    "exam": "0.0.7",
     "istanbul": "0.2.11",
     "express": "4.4.4",
     "zeriousify": "0.1.9",
