@@ -4,8 +4,12 @@ var Client = require('./lib/Client');
 
 var beams = module.exports = {};
 
-// Expose the Beams version to module users.
-beams.version = require('./package.json').version;
+// Expose the version number, but only load package JSON if it's requested.
+Object.defineProperty(beams, 'version', {
+  get: function () {
+    return require('./package.json').version;
+  }
+});
 
 // We can iterate over Beams clients.
 beams.clients = {};

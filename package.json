@@ -1,6 +1,19 @@
 {
   "name": "beams",
+  "version": "0.0.16",
   "description": "A long-polling Node.js server and client",
+  "dependencies": {
+    "jymin": "^0.3.5"
+  },
+  "devDependencies": {
+    "exam": "^0.0.8",
+    "istanbul": "0.2.11",
+    "express": "4.4.4",
+    "zeriousify": "^0.1.10",
+    "coveralls": "2.10.1",
+    "chug": "^0.2.0",
+    "figlet": "1.0.9"
+  },
   "keywords": [
     "beam",
     "beams",
@@ -15,43 +28,22 @@
     "socket",
     "io"
   ],
-  "version": "0.0.16",
   "main": "beams.js",
-  "homepage": "http://lighter.io/beams",
-  "repository": "git://github.com/lighterio/beams.git",
-  "author": "Sam Eubank <sameubank@gmail.com>",
-  "contributors": [
-    "Sam Eubank <sameubank@gmail.com>"
-  ],
-  "engines": [
-    "node >= 0.2.6"
-  ],
+  "engines": {
+    "node": ">=0.2.6"
+  },
   "scripts": {
     "test": "./node_modules/exam/exam.js",
-    "retest": "./node_modules/exam/exam.js --watch",
     "cover": "istanbul cover ./node_modules/exam/exam.js",
     "report": "open coverage/lcov-report/index.html",
     "coveralls": "istanbul cover ./node_modules/exam/exam.js --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage"
   },
-  "dependencies": {
-    "jymin": "0.3.0"
-  },
-  "devDependencies": {
-    "exam": "0.0.7",
-    "istanbul": "0.2.11",
-    "express": "4.4.4",
-    "zeriousify": "0.1.9",
-    "coveralls": "2.10.1",
-    "chug": "0.1.35",
-    "figlet": "1.0.9"
-  },
-  "bugs": {
-    "url": "http://github.com/lighterio/beams/issues"
-  },
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "http://github.com/lighterio/beams/blob/master/MIT-LICENSE.md"
-    }
-  ]
+  "repository": "https://github.com/lighterio/beams.git",
+  "bugs": "https://github.com/lighterio/beams/issues",
+  "homepage": "http://lighter.io/beams",
+  "author": "Sam Eubank <sameubank@gmail.com>",
+  "contributors": [
+    "Sam Eubank <sameubank@gmail.com>"
+  ],
+  "license": "MIT"
 }
