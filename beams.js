@@ -1,4 +1,4 @@
-var Client = require('./lib/Client');
+var Client = require(__dirname + '/lib/Client');
 
 // TODO: Scale Beams servers with a hash ring module.
 
@@ -7,7 +7,7 @@ var beams = module.exports = {};
 // Expose the version number, but only load package JSON if it's requested.
 Object.defineProperty(beams, 'version', {
   get: function () {
-    return require('./package.json').version;
+    return require(__dirname + '/package.json').version;
   }
 });
 

@@ -1,6 +1,6 @@
 var cwd = process.cwd();
 
-exports.version = require('../package.json').version;
+exports.version = require(__dirname + '/package.json').version;
 
 require('figlet').text('Beams Client v' + exports.version, {font: 'Standard'}, function (err, figlet) {
 
@@ -8,9 +8,11 @@ require('figlet').text('Beams Client v' + exports.version, {font: 'Standard'}, f
 
   var source = require('chug')([
     'node_modules/jymin/scripts/ajax.js',
-    'node_modules/jymin/scripts/collections.js',
+    'node_modules/jymin/scripts/arrays.js',
     'node_modules/jymin/scripts/dates.js',
+    'node_modules/jymin/scripts/emitter.js',
     'node_modules/jymin/scripts/logging.js',
+    'node_modules/jymin/scripts/objects.js',
     'node_modules/jymin/scripts/strings.js',
     'node_modules/jymin/scripts/types.js',
     'scripts/beams-jymin.js'

@@ -1,17 +1,17 @@
 {
   "name": "beams",
-  "version": "0.0.16",
+  "version": "0.1.0",
   "description": "A long-polling Node.js server and client",
   "dependencies": {
     "jymin": "^0.3.5"
   },
   "devDependencies": {
-    "exam": "^0.0.8",
+    "exam": "^0.1.5",
     "istanbul": "0.2.11",
     "express": "4.4.4",
     "zeriousify": "^0.1.10",
     "coveralls": "2.10.1",
-    "chug": "^0.2.0",
+    "chug": "^0.2.1",
     "figlet": "1.0.9"
   },
   "keywords": [
@@ -33,6 +33,7 @@
     "node": ">=0.2.6"
   },
   "scripts": {
+    "build": "node .chug.js",
     "test": "./node_modules/exam/exam.js",
     "cover": "istanbul cover ./node_modules/exam/exam.js",
     "report": "open coverage/lcov-report/index.html",
