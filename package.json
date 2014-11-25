@@ -2,14 +2,12 @@
   "name": "beams",
   "version": "0.1.0",
   "description": "A long-polling Node.js server and client",
-  "dependencies": {
-    "jymin": "^0.4.0"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "jymin": "^0.4.0",
     "exam": "^0.1.6",
     "istanbul": "0.2.11",
     "express": "4.4.4",
-    "zeriousify": "^0.1.12",
     "coveralls": "2.10.1",
     "chug": "^0.2.2",
     "figlet": "1.0.9"
