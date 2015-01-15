@@ -5,11 +5,11 @@
   "dependencies": {},
   "devDependencies": {
     "jymin": "^0.4.0",
-    "exam": "^0.1.6",
+    "exam": "^0.2.0",
     "istanbul": "0.2.11",
     "express": "4.4.4",
     "coveralls": "2.10.1",
-    "chug": "^0.2.2",
+    "chug": "^0.3.0",
     "figlet": "1.0.9"
   },
   "keywords": [
