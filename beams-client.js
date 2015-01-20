@@ -1,9 +1,9 @@
 /**
- *  ____                              ____ _ _            _            ___   ___   _  __
- * | __ )  ___  __ _ _ __ ___  ___   / ___| (_) ___ _ __ | |_  __   __/ _ \ / _ \ / |/ /_
- * |  _ \ / _ \/ _` | '_ ` _ \/ __| | |   | | |/ _ \ '_ \| __| \ \ / / | | | | | || | '_ \
- * | |_) |  __/ (_| | | | | | \__ \ | |___| | |  __/ | | | |_   \ V /| |_| | |_| || | (_) |
- * |____/ \___|\__,_|_| |_| |_|___/  \____|_|_|\___|_| |_|\__|   \_/  \___(_)___(_)_|\___/
+ *  ____                              ____ _ _            _            ___   _   ___
+ * | __ )  ___  __ _ _ __ ___  ___   / ___| (_) ___ _ __ | |_  __   __/ _ \ / | / _ \
+ * |  _ \ / _ \/ _` | '_ ` _ \/ __| | |   | | |/ _ \ '_ \| __| \ \ / / | | || || | | |
+ * | |_) |  __/ (_| | | | | | \__ \ | |___| | |  __/ | | | |_   \ V /| |_| || || |_| |
+ * |____/ \___|\__,_|_| |_| |_|___/  \____|_|_|\___|_| |_|\__|   \_/  \___(_)_(_)___/
  *
  *
  * http://lighter.io/beams
@@ -11,9 +11,11 @@
  *
  * Source files:
  *   https://github.com/lighterio/jymin/blob/master/scripts/ajax.js
- *   https://github.com/lighterio/jymin/blob/master/scripts/collections.js
+ *   https://github.com/lighterio/jymin/blob/master/scripts/arrays.js
  *   https://github.com/lighterio/jymin/blob/master/scripts/dates.js
+ *   https://github.com/lighterio/jymin/blob/master/scripts/emitter.js
  *   https://github.com/lighterio/jymin/blob/master/scripts/logging.js
+ *   https://github.com/lighterio/jymin/blob/master/scripts/objects.js
  *   https://github.com/lighterio/jymin/blob/master/scripts/strings.js
  *   https://github.com/lighterio/jymin/blob/master/scripts/types.js
  *   https://github.com/lighterio/beams/blob/master/scripts/beams-jymin.js
@@ -36,6 +38,14 @@ var getXhr = function () {
   var Xhr = window.XMLHttpRequest;
   var ActiveX = window.ActiveXObject;
   return Xhr ? new Xhr() : (ActiveX ? new ActiveX('Microsoft.XMLHTTP') : false);
+};
+
+/**
+ * Get an XHR upload object.
+ */
+var getUpload = function () {
+  var xhr = getXhr();
+  return xhr ? xhr.upload : false;
 };
 
 /**
@@ -138,70 +148,6 @@ var each = function (
 };
 
 /**
- * Iterate over an object's keys, and call a function on each key value pair.
- */
-var forIn = function (
-  object,  // Object*:   The object to iterate over.
-  callback // Function*: The function to call on each pair. `callback(value, key, object)`
-) {
-  if (object) {
-    for (var key in object) {
-      var result = callback(key, object[key], object);
-      if (result === false) {
-        break;
-      }
-    }
-  }
-};
-
-/**
- * Iterate over an object's keys, and call a function on each (value, key) pair.
- */
-var forOf = function (
-  object,  // Object*:   The object to iterate over.
-  callback // Function*: The function to call on each pair. `callback(value, key, object)`
-) {
-  if (object) {
-    for (var key in object) {
-      var result = callback(object[key], key, object);
-      if (result === false) {
-        break;
-      }
-    }
-  }
-};
-
-/**
- * Decorate an object with properties from another object. If the properties
- */
-var decorateObject = function (
-  object,     // Object: The object to decorate.
-  decorations // Object: The object to iterate over.
-) {
-    if (object && decorations) {
-    forIn(decorations, function (key, value) {
-      object[key] = value;
-    });
-    }
-    return object;
-};
-
-/**
- * Ensure that a property exists by creating it if it doesn't.
- */
-var ensureProperty = function (
-  object,
-  property,
-  defaultValue
-) {
-  var value = object[property];
-  if (!value) {
-    value = object[property] = defaultValue;
-  }
-  return value;
-};
-
-/**
  * Get the length of an array.
  * @return number: Array length.
  */
@@ -218,7 +164,7 @@ var getLength = function (
 var getFirst = function (
   array // Array: The array to get the
 ) {
-  return isInstance(array) ? array[0] : undefined;
+  return isArray(array) ? array[0] : undefined;
 };
 
 /**
@@ -337,6 +283,112 @@ var getIsoDate = function (
   }
   return date;
 };
+/*
+ * Takes a js date object and returns something in the format of
+ * "August 26,2014 at 7:42pm"
+ */
+var formatLongDate = function (date) {
+  var MONTHS = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  isDate(date) ? 0 : (date = new Date(+date || date));
+  var m = MONTHS[date.getMonth()];
+  var isAm = true;
+  var h = +date.getHours();
+  var minutes = date.getMinutes();
+  minutes = minutes > 9 ? minutes : "0" + minutes;
+  h > 12 ? (isAm = false, h -= 12) : (h === 0 ? h = 12 : 0);
+  return m + " " + date.getDate() + ", " + date.getFullYear() + " at " + h +
+    ":" + minutes + (isAm ? "AM" : "PM");
+}
+/*
+ * Takes a js date object and returns something in the format of
+ * "8/26/14 7:42pm"
+ */
+var formatShortDate = function (date) {
+  isDate(date) ? 0 : (date = new Date(+date || date));
+  var m = date.getMonth() + 1;
+  var isAm = true;
+  var h = +date.getHours();
+  var minutes = date.getMinutes();
+  minutes = minutes > 9 ? minutes : "0" + minutes;
+  h > 12 ? (isAm = false, h -= 12) : (h === 0 ? h = 12 : 0);
+  return m + "/" + date.getDate() + "/" + date.getFullYear() % 100 + " " + h +
+    ":" + minutes + (isAm ? "AM" : "PM");
+}
+/**
+ * An Emitter is an EventEmitter-style object.
+ */
+var Emitter = function () {
+  // Lazily apply the prototype so that Emitter can minify out if not used.
+  Emitter.prototype = EmitterPrototype;
+};
+
+/**
+ * Expose Emitter methods which can be applied lazily.
+ */
+var EmitterPrototype = {
+
+  _ON: function (event, fn) {
+    var self = this;
+    var events = self._EVENTS || (self._EVENTS = {});
+    var listeners = events[event] || (events[event] = []);
+    listeners.push(fn);
+    return self;
+  },
+
+  _ONCE: function (event, fn) {
+    var self = this;
+    function f() {
+      fn.apply(self, arguments);
+      self._REMOVE_LISTENER(event, f);
+    }
+    self._ON(event, f);
+    return self;
+  },
+
+  _EMIT: function (event) {
+    var self = this;
+    var listeners = self._LISTENERS(event);
+    var args = Array.prototype.slice.call(arguments, 1);
+    forEach(listeners, function (listener) {
+      listener.apply(self, args);
+    });
+    return self;
+  },
+
+  _LISTENERS: function (event) {
+    var self = this;
+    var events = self._EVENTS || 0;
+    var listeners = events[event] || [];
+    return listeners;
+  },
+
+  _REMOVE_LISTENER: function (event, fn) {
+    var self = this;
+    var listeners = self._LISTENERS(event);
+    var i = listeners.indexOf(fn);
+    if (i > -1) {
+      listeners.splice(i, 1);
+    }
+    return self;
+  },
+
+  _REMOVE_ALL_LISTENERS: function (event, fn) {
+    var self = this;
+    var events = self._EVENTS || {};
+    if (event) {
+      delete events[event];
+    }
+    else {
+      for (event in events) {
+        delete events[event];
+      }
+    }
+    return self;
+  }
+
+};
 /**
  * Log values to the console, if it's available.
  */
@@ -382,6 +434,68 @@ var ifConsole = function (method, args) {
   }
 };
 /**
+ * Iterate over an object's keys, and call a function on each key value pair.
+ */
+var forIn = function (
+  object,  // Object*:   The object to iterate over.
+  callback // Function*: The function to call on each pair. `callback(value, key, object)`
+) {
+  if (object) {
+    for (var key in object) {
+      var result = callback(key, object[key], object);
+      if (result === false) {
+        break;
+      }
+    }
+  }
+};
+
+/**
+ * Iterate over an object's keys, and call a function on each (value, key) pair.
+ */
+var forOf = function (
+  object,  // Object*:   The object to iterate over.
+  callback // Function*: The function to call on each pair. `callback(value, key, object)`
+) {
+  if (object) {
+    for (var key in object) {
+      var result = callback(object[key], key, object);
+      if (result === false) {
+        break;
+      }
+    }
+  }
+};
+
+/**
+ * Decorate an object with properties from another object. If the properties
+ */
+var decorateObject = function (
+  object,     // Object: The object to decorate.
+  decorations // Object: The object to iterate over.
+) {
+  if (object && decorations) {
+    forIn(decorations, function (key, value) {
+      object[key] = value;
+    });
+  }
+  return object;
+};
+
+/**
+ * Ensure that a property exists by creating it if it doesn't.
+ */
+var ensureProperty = function (
+  object,
+  property,
+  defaultValue
+) {
+  var value = object[property];
+  if (!value) {
+    value = object[property] = defaultValue;
+  }
+  return value;
+};/**
  * Ensure a value is a string.
  */
 var ensureString = function (
@@ -661,18 +775,21 @@ var Beams = function () {
   // Until we connect, queue emissions.
   var emissions = [];
 
-  // When a message is received, its list of callbacks can be looked up by message name.
-  var callbacks = {};
+  // When a message is received, its handlers can be looked up by message name.
+  var events = Beams._EVENTS = {};
 
-  // If onReady gets called more than once, reset callbacks.
-  // When used with D6, calls to "Beams.on" should be inside onReady callbacks.
+  // If onReady gets called more than once, reset events.
+  // When used with D6, calls to "Beams._ON" should be inside onReady events.
   var hasRendered = false;
   onReady(function () {
     if (hasRendered) {
-      callbacks = {connect: onConnect};
+      events = Beams._EVENTS = {connect: onConnect};
     }
     hasRendered = true;
   });
+
+  // Add the Emitter prototype methods to Beams.
+  decorateObject(Beams, EmitterPrototype);
 
   // Keep a count of emissions so the server can de-duplicate.
   var n = 0;
@@ -680,34 +797,19 @@ var Beams = function () {
   /**
    * Listen for messages from the server.
    */
-  Beams._ON = Beams.on = function (name, callback) {
+  Beams._ON = function (name, callback) {
     //+env:debug
     log('[Beams] Listening for "' + name + '".');
     //-env:debug
-
-    var list = callbacks[name];
-    if (!list) {
-      list = callbacks[name] = [];
-    }
+    var list = events[name] || (events[name] = []);
     push(list, callback);
-    return Beams;
-  };
-
-  /**
-   * Listen for messages from the server.
-   */
-  Beams._HANDLE = Beams.handle = function (name, callback) {
-    //+env:debug
-    log('[Beams] Listening for "' + name + '" with a singular handler.');
-    //-env:debug
-    callbacks[name] = [callback];
     return Beams;
   };
 
   /**
    * Listen for "connect" messages.
    */
-  Beams._CONNECT = Beams.connect = function (callback) {
+  Beams._CONNECT = function (callback) {
     Beams._ON('connect', callback);
     return Beams;
   };
@@ -715,7 +817,7 @@ var Beams = function () {
   /**
    * Emit a message to the server via XHR POST.
    */
-  Beams._EMIT = Beams.emit = function (name, data) {
+  Beams._EMIT = function (name, data) {
     data = stringify(data || {}, 1);
 
     //+env:debug
@@ -739,7 +841,7 @@ var Beams = function () {
         }
       );
     }
-    if (Beams.id) {
+    if (Beams._ID) {
       send();
     }
     else {
@@ -783,13 +885,13 @@ var Beams = function () {
   }
 
   /**
-   * Trigger any matching callbacks with received data.
+   * Trigger any matching events with received data.
    */
   function triggerCallbacks(name, data) {
     //+env:debug
     log('[Beams] Received "' + name + '": ' + stringify(data) + '.');
     //-env:debug
-    forEach(callbacks[name], function (callback) {
+    forEach(events[name], function (callback) {
       if (isFunction(callback)) {
         callback.call(Beams, data);
       }
@@ -805,8 +907,8 @@ var Beams = function () {
    * When we connect, set the client ID.
    */
   function onConnect(data) {
-    Beams.id = data.id;
-    endpointUrl = serverUrl + '?id=' + Beams.id;
+    Beams._ID = data.id;
+    endpointUrl = serverUrl + '?id=' + Beams._ID;
     //+env:debug
     log('[Beams] Set endpoint URL to "' + endpointUrl + '".');
     //-env:debug

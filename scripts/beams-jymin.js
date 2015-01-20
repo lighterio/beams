@@ -31,18 +31,21 @@ var Beams = function () {
   // Until we connect, queue emissions.
   var emissions = [];
 
-  // When a message is received, its list of callbacks can be looked up by message name.
-  var callbacks = {};
+  // When a message is received, its handlers can be looked up by message name.
+  var events = Beams._EVENTS = {};
 
-  // If onReady gets called more than once, reset callbacks.
-  // When used with D6, calls to "Beams.on" should be inside onReady callbacks.
+  // If onReady gets called more than once, reset events.
+  // When used with D6, calls to "Beams._ON" should be inside onReady events.
   var hasRendered = false;
   onReady(function () {
     if (hasRendered) {
-      callbacks = {connect: onConnect};
+      events = Beams._EVENTS = {connect: onConnect};
     }
     hasRendered = true;
   });
+
+  // Add the Emitter prototype methods to Beams.
+  decorateObject(Beams, EmitterPrototype);
 
   // Keep a count of emissions so the server can de-duplicate.
   var n = 0;
@@ -50,34 +53,19 @@ var Beams = function () {
   /**
    * Listen for messages from the server.
    */
-  Beams._ON = Beams.on = function (name, callback) {
+  Beams._ON = function (name, callback) {
     //+env:debug
     log('[Beams] Listening for "' + name + '".');
     //-env:debug
-
-    var list = callbacks[name];
-    if (!list) {
-      list = callbacks[name] = [];
-    }
+    var list = events[name] || (events[name] = []);
     push(list, callback);
-    return Beams;
-  };
-
-  /**
-   * Listen for messages from the server.
-   */
-  Beams._HANDLE = Beams.handle = function (name, callback) {
-    //+env:debug
-    log('[Beams] Listening for "' + name + '" with a singular handler.');
-    //-env:debug
-    callbacks[name] = [callback];
     return Beams;
   };
 
   /**
    * Listen for "connect" messages.
    */
-  Beams._CONNECT = Beams.connect = function (callback) {
+  Beams._CONNECT = function (callback) {
     Beams._ON('connect', callback);
     return Beams;
   };
@@ -85,7 +73,7 @@ var Beams = function () {
   /**
    * Emit a message to the server via XHR POST.
    */
-  Beams._EMIT = Beams.emit = function (name, data) {
+  Beams._EMIT = function (name, data) {
     data = stringify(data || {}, 1);
 
     //+env:debug
@@ -109,7 +97,7 @@ var Beams = function () {
         }
       );
     }
-    if (Beams.id) {
+    if (Beams._ID) {
       send();
     }
     else {
@@ -153,13 +141,13 @@ var Beams = function () {
   }
 
   /**
-   * Trigger any matching callbacks with received data.
+   * Trigger any matching events with received data.
    */
   function triggerCallbacks(name, data) {
     //+env:debug
     log('[Beams] Received "' + name + '": ' + stringify(data) + '.');
     //-env:debug
-    forEach(callbacks[name], function (callback) {
+    forEach(events[name], function (callback) {
       if (isFunction(callback)) {
         callback.call(Beams, data);
       }
@@ -175,8 +163,8 @@ var Beams = function () {
    * When we connect, set the client ID.
    */
   function onConnect(data) {
-    Beams.id = data.id;
-    endpointUrl = serverUrl + '?id=' + Beams.id;
+    Beams._ID = data.id;
+    endpointUrl = serverUrl + '?id=' + Beams._ID;
     //+env:debug
     log('[Beams] Set endpoint URL to "' + endpointUrl + '".');
     //-env:debug

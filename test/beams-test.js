@@ -1,7 +1,5 @@
 var beams = require('../beams');
 
-require('zeriousify').test();
-
 var server, request, response;
 
 describe('Beams', function () {
