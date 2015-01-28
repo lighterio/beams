@@ -16,7 +16,7 @@ var Beams = function () {
   window.Beams = Beams;
 
   // If we've already decorated the singleton, don't do it again.
-  if (Beams._ON) {
+  if (Beams._on) {
     return Beams;
   }
 
@@ -32,14 +32,14 @@ var Beams = function () {
   var emissions = [];
 
   // When a message is received, its handlers can be looked up by message name.
-  var events = Beams._EVENTS = {};
+  var events = Beams._events = {};
 
   // If onReady gets called more than once, reset events.
-  // When used with D6, calls to "Beams._ON" should be inside onReady events.
+  // When used with D6, calls to "Beams._on" should be inside onReady events.
   var hasRendered = false;
   onReady(function () {
     if (hasRendered) {
-      events = Beams._EVENTS = {connect: onConnect};
+      events = Beams._events = {connect: onConnect};
     }
     hasRendered = true;
   });
@@ -53,7 +53,7 @@ var Beams = function () {
   /**
    * Listen for messages from the server.
    */
-  Beams._ON = function (name, callback) {
+  Beams._on = function (name, callback) {
     //+env:debug
     log('[Beams] Listening for "' + name + '".');
     //-env:debug
@@ -65,15 +65,15 @@ var Beams = function () {
   /**
    * Listen for "connect" messages.
    */
-  Beams._CONNECT = function (callback) {
-    Beams._ON('connect', callback);
+  Beams._connect = function (callback) {
+    Beams._on('connect', callback);
     return Beams;
   };
 
   /**
    * Emit a message to the server via XHR POST.
    */
-  Beams._EMIT = function (name, data) {
+  Beams._emit = function (name, data) {
     data = stringify(data || {}, 1);
 
     //+env:debug
@@ -97,7 +97,7 @@ var Beams = function () {
         }
       );
     }
-    if (Beams._ID) {
+    if (Beams._id) {
       send();
     }
     else {
@@ -163,8 +163,8 @@ var Beams = function () {
    * When we connect, set the client ID.
    */
   function onConnect(data) {
-    Beams._ID = data.id;
-    endpointUrl = serverUrl + '?id=' + Beams._ID;
+    Beams._id = data.id;
+    endpointUrl = serverUrl + '?id=' + Beams._id;
     //+env:debug
     log('[Beams] Set endpoint URL to "' + endpointUrl + '".');
     //-env:debug
@@ -176,7 +176,7 @@ var Beams = function () {
     emissions = [];
   }
 
-  Beams._CONNECT(onConnect);
+  Beams._connect(onConnect);
 
   // Start polling.
   poll();

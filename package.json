@@ -1,15 +1,13 @@
 {
   "name": "beams",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A long-polling Node.js server and client",
   "dependencies": {},
   "devDependencies": {
-    "jymin": "^0.4.0",
-    "exam": "^0.2.1",
-    "istanbul": "0.2.11",
+    "jymin": "^0.4.1",
+    "exam": "^0.2.2",
     "express": "4.4.4",
-    "coveralls": "2.10.1",
-    "chug": "^0.3.0",
+    "chug": "^0.3.1",
     "figlet": "1.0.9"
   },
   "keywords": [
@@ -33,9 +31,9 @@
   "scripts": {
     "build": "node .chug.js",
     "test": "./node_modules/exam/exam.js",
-    "cover": "istanbul cover ./node_modules/exam/exam.js",
+    "cover": "./node_modules/exam/exam-cover.js",
     "report": "open coverage/lcov-report/index.html",
-    "coveralls": "istanbul cover ./node_modules/exam/exam.js --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage"
+    "coveralls": "./node_modules/exam/exam-coveralls.js"
   },
   "repository": "https://github.com/lighterio/beams.git",
   "bugs": "https://github.com/lighterio/beams/issues",

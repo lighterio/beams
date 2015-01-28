@@ -1,9 +1,9 @@
 /**
- *  ____                              ____ _ _            _            ___   _   ___
- * | __ )  ___  __ _ _ __ ___  ___   / ___| (_) ___ _ __ | |_  __   __/ _ \ / | / _ \
- * |  _ \ / _ \/ _` | '_ ` _ \/ __| | |   | | |/ _ \ '_ \| __| \ \ / / | | || || | | |
- * | |_) |  __/ (_| | | | | | \__ \ | |___| | |  __/ | | | |_   \ V /| |_| || || |_| |
- * |____/ \___|\__,_|_| |_| |_|___/  \____|_|_|\___|_| |_|\__|   \_/  \___(_)_(_)___/
+ *  ____                              ____ _ _            _            ___   _   _
+ * | __ )  ___  __ _ _ __ ___  ___   / ___| (_) ___ _ __ | |_  __   __/ _ \ / | / |
+ * |  _ \ / _ \/ _` | '_ ` _ \/ __| | |   | | |/ _ \ '_ \| __| \ \ / / | | || | | |
+ * | |_) |  __/ (_| | | | | | \__ \ | |___| | |  __/ | | | |_   \ V /| |_| || |_| |
+ * |____/ \___|\__,_|_| |_| |_|___/  \____|_|_|\___|_| |_|\__|   \_/  \___(_)_(_)_|
  *
  *
  * http://lighter.io/beams
@@ -24,65 +24,78 @@
 
 /**
  * Empty handler.
+ * @type {function}
  */
-var doNothing = function () {};
-
-// TODO: Enable multiple handlers using "bind" or perhaps middlewares.
-var responseSuccessHandler = doNothing;
-var responseFailureHandler = doNothing;
+Jymin.doNothing = function () {};
 
 /**
- * Get an XMLHttpRequest object.
+ * Default AJAX success handler function.
+ * @type {function}
  */
-var getXhr = function () {
+Jymin.responseSuccessFn = Jymin.doNothing;
+
+/**
+ * Default AJAX failure handler function.
+ * @type {function}
+ */
+Jymin.responseFailureFn = Jymin.doNothing;
+
+/**
+ * Get an XMLHttpRequest object (or ActiveX object in old IE).
+ *
+ * @return {XMLHttpRequest}   The request object.
+ */
+Jymin.getXhr = function () {
   var Xhr = window.XMLHttpRequest;
   var ActiveX = window.ActiveXObject;
   return Xhr ? new Xhr() : (ActiveX ? new ActiveX('Microsoft.XMLHTTP') : false);
 };
 
 /**
- * Get an XHR upload object.
+ * Get an XMLHttpRequest upload object.
+ *
+ * @return {XMLHttpRequestUpload}   The request upload object.
  */
-var getUpload = function () {
-  var xhr = getXhr();
+Jymin.getUpload = function () {
+  var xhr = Jymin.getXhr();
   return xhr ? xhr.upload : false;
 };
 
 /**
  * Make an AJAX request, and handle it with success or failure.
- * @return boolean: True if AJAX is supported.
+ *
+ * @param  {string}   url        A URL from which to request a response.
+ * @param  {string}   body       An optional query, which if provided, makes the request a POST.
+ * @param  {function} onSuccess  An optional function to run upon success.
+ * @param  {function} onFailure  An optional function to run upon failure.
+ * @return {boolean}             True if AJAX is supported.
  */
-var getResponse = function (
-  url,       // string:    The URL to request a response from.
-  body,      // object|:   Data to post. The method is automagically "POST" if body is truey, otherwise "GET".
-  onSuccess, // function|: Callback to run on success. `onSuccess(response, request)`.
-  onFailure  // function|: Callback to run on failure. `onFailure(response, request)`.
-) {
+Jymin.getResponse = function (url, body, onSuccess, onFailure) {
   // If the optional body argument is omitted, shuffle it out.
-  if (isFunction(body)) {
+  if (Jymin.isFunction(body)) {
     onFailure = onSuccess;
     onSuccess = body;
     body = 0;
   }
-  var request = getXhr();
+  var request = Jymin.getXhr();
   if (request) {
-    onFailure = onFailure || responseFailureHandler;
-    onSuccess = onSuccess || responseSuccessHandler;
+    onFailure = onFailure || Jymin.responseFailureFn;
+    onSuccess = onSuccess || Jymin.responseSuccessFn;
     request.onreadystatechange = function() {
       if (request.readyState == 4) {
         //+env:debug
-        log('[Jymin] Received response from "' + url + '". (' + getResponse._WAITING + ' in progress).');
+        Jymin.log('[Jymin] Received response from "' + url + '". (' + Jymin.getResponse._waiting + ' in progress).');
         //-env:debug
-        --getResponse._WAITING;
+        --Jymin.getResponse._waiting;
         var status = request.status;
         var isSuccess = (status == 200);
-        var callback = isSuccess ?
-          onSuccess || responseSuccessHandler :
-          onFailure || responseFailureHandler;
-        var data = parse(request.responseText);
-        data._STATUS = status;
-        data._REQUEST = request;
-        callback(data);
+        var fn = isSuccess ?
+          onSuccess || Jymin.responseSuccessFn :
+          onFailure || Jymin.responseFailureFn;
+        var data = Jymin.parse(request.responseText) || {};
+        data._status = status;
+        data._request = request;
+        fn(data);
       }
     };
     request.open(body ? 'POST' : 'GET', url, true);
@@ -92,21 +105,21 @@ var getResponse = function (
     }
 
     // Record the original request URL.
-    request._URL = url;
+    request._url = url;
 
     // If it's a post, record the post body.
     if (body) {
-      request._BODY = body;
+      request._body = body;
     }
 
     // Record the time the request was made.
-    request._TIME = getTime();
+    request._time = Jymin.getTime();
 
     // Allow applications to back off when too many requests are in progress.
-    getResponse._WAITING = (getResponse._WAITING || 0) + 1;
+    Jymin.getResponse._waiting = (Jymin.getResponse._waiting || 0) + 1;
 
     //+env:debug
-    log('[Jymin] Sending request to "' + url + '". (' + getResponse._WAITING + ' in progress).');
+    Jymin.log('[Jymin] Sending request to "' + url + '". (' + Jymin.getResponse._waiting + ' in progress).');
     //-env:debug
     request.send(body || null);
 
@@ -114,88 +127,93 @@ var getResponse = function (
   return true;
 };
 /**
- * Iterate over an array, and call a function on each item.
+ * Iterate over an array-like collection, and call a function on each value, with
+ * the arguments: (value, index, array). Iteration stops if the function returns false.
+ *
+ * @param  {Array|Object|string}  array  A collection, expected to have indexed items and a length.
+ * @param  {Function}             fn     A function to call on each item.
+ * @return {Number}                      The number of items iterated over without breaking.
  */
-var forEach = function (
-  array,   // Array:    The array to iterate over.
-  callback // Function: The function to call on each item. `callback(item, index, array)`
-) {
+Jymin.forEach = function (array, fn) {
   if (array) {
-    for (var index = 0, length = getLength(array); index < length; index++) {
-      var result = callback(array[index], index, array);
+    for (var index = 0, length = Jymin.getLength(array); index < length; index++) {
+      var result = fn(array[index], index, array);
       if (result === false) {
         break;
       }
     }
+    return index;
   }
 };
 
 /**
- * Iterate over an array, and call a callback with (index, value), as in jQuery.each
+ * Iterate over an array-like collection, and call a function on each value, with
+ * the arguments: (index, value, array). Iteration stops if the function returns false.
+ *
+ * @param  {Array|Object|string}     array  A collection, expected to have indexed items and a length.
+ * @param  {Function}  fn                   A function to call on each item.
+ * @return {Number}                         The number of items iterated over without breaking.
  */
-var each = function (
-  array,   // Array:    The array to iterate over.
-  callback // Function: The function to call on each item. `callback(item, index, array)`
-) {
+Jymin.each = function (array, fn) {
   if (array) {
-    for (var index = 0, length = getLength(array); index < length; index++) {
-      var result = callback(index, array[index], array);
+    for (var index = 0, length = Jymin.getLength(array); index < length; index++) {
+      var result = fn(index, array[index], array);
       if (result === false) {
         break;
       }
     }
+    return index;
   }
 };
 
 /**
- * Get the length of an array.
- * @return number: Array length.
+ * Get the length of an Array/Object/string/etc.
+ *
+ * @param {Array|Object|string}  array  A collection, expected to have a length.
+ * @return {Number}                     The length of the collection.
  */
-var getLength = function (
-  array // Array|DomNodeCollection|String: The object to check for length.
-) {
-  return isInstance(array) || isString(array) ? array.length : 0;
+Jymin.getLength = function (array) {
+  return (array || 0).length || 0;
 };
 
 /**
- * Get the first item in an array.
- * @return mixed: First item.
+ * Get the first item in an Array/Object/string/etc.
+ * @param {Array|Object|string}  array  A collection, expected to have index items.
+ * @return {Object}                     The first item in the collection.
  */
-var getFirst = function (
-  array // Array: The array to get the
-) {
-  return isArray(array) ? array[0] : undefined;
+Jymin.getFirst = function (array) {
+  return (array || 0)[0];
 };
 
 /**
- * Get the first item in an array.
- * @return mixed: First item.
+ * Get the last item in an Array/Object/string/etc.
+ *
+ * @param {Array|Object|string}  array  A collection, expected to have indexed items and a length.
+ * @return {Object}                     The last item in the collection.
  */
-var getLast = function (
-  array // Array: The array to get the
-) {
-  return isInstance(array) ? array[getLength(array) - 1] : undefined;
+Jymin.getLast = function (array) {
+  return (array || 0)[Jymin.getLength(array) - 1];
 };
 
 /**
- * Check for multiple array items.
- * @return boolean: true if the array has more than one item.
+ * Check for the existence of more than one collection items.
+ *
+ * @param {Array|Object|string}   array  A collection, expected to have a length.
+ * @return {boolean}                     True if the collection has more than one item.
  */
-var hasMany = function (
-  array // Array: The array to check for item.
-) {
-  return getLength(array) > 1;
+Jymin.hasMany = function (array) {
+  return Jymin.getLength(array) > 1;
 };
 
 /**
  * Push an item into an array.
- * @return mixed: Pushed item.
+ *
+ * @param  {Array}  array  An array to push an item into.
+ * @param  {Object} item   An item to push.
+ * @return {Object}        The item that was pushed.
  */
-var push = function (
-  array, // Array: The array to push the item into.
-  item   // mixed: The item to push.
-) {
-  if (isArray(array)) {
+Jymin.push = function (array, item) {
+  if (Jymin.isArray(array)) {
     array.push(item);
   }
   return item;
@@ -203,45 +221,51 @@ var push = function (
 
 /**
  * Pop an item off an array.
- * @return mixed: Popped item.
+ *
+ * @param  {Array}  array  An array to pop an item from.
+ * @return {Object}        The item that was popped.
  */
-var pop = function (
-  array // Array: The array to push the item into.
-) {
-  if (isArray(array)) {
+Jymin.pop = function (array) {
+  if (Jymin.isArray(array)) {
     return array.pop();
   }
 };
 
-var merge = function (
-  array, // Array:  The array to merge into.
-  items  // mixed+: The items to merge into the array.
-) {
-  // TODO: Use splice instead of pushes to get better performance?
-  var addToFirstArray = function (item) {
-    array.push(item);
-  };
-  for (var i = 1, l = arguments.length; i < l; i++) {
-    forEach(arguments[i], addToFirstArray);
-  }
+/**
+ * Merge one or more arrays into an array.
+ *
+ * @param  {Array}     array  An array to merge into.
+ * @params {Array...}         Items to merge into the array.
+ * @return {Array}            The first array argument, with new items merged in.
+ */
+Jymin.merge = function (array) {
+  Jymin.forEach(arguments, function (items, index) {
+    if (index) {
+      Jymin.forEach(items, function (item) {
+        Jymin.push(array, item);
+      });
+    }
+  });
+  return array;
 };
 
 /**
  * Push padding values onto an array up to a specified length.
- * @return number: The number of padding values that were added.
+ *
+ * @return number:
+ * @param  {Array}  array        An array to pad.
+ * @param  {Number} padToLength  A desired length for the array, after padding.
+ * @param  {Object} paddingValue A value to use as padding.
+ * @return {Number}              The number of padding values that were added.
  */
-var padArray = function (
-  array,       // Array:  The array to check for items.
-  padToLength, // number: The minimum number of items in the array.
-  paddingValue // mixed|: The value to use as padding.
-) {
+Jymin.padArray = function (array, padToLength, paddingValue) {
   var countAdded = 0;
-  if (isArray(array)) {
-    var startingLength = getLength(array);
+  if (Jymin.isArray(array)) {
+    var startingLength = Jymin.getLength(array);
     if (startingLength < length) {
-      paddingValue = isUndefined(paddingValue) ? '' : paddingValue;
+      paddingValue = Jymin.isUndefined(paddingValue) ? '' : paddingValue;
       for (var index = startingLength; index < length; index++) {
-        array.push(paddingValue);
+        Jymin.push(array, paddingValue);
         countAdded++;
       }
     }
@@ -250,25 +274,22 @@ var padArray = function (
 };
 /**
  * Get Unix epoch milliseconds from a date.
- * @return integer: Epoch milliseconds.
+ *
+ * @param {Date}    date  Date object (default: now).
+ * @return {Number}       Epoch milliseconds.
  */
-var getTime = function (
-  date // Date: Date object. (Default: now)
-) {
-  date = date || new Date();
-  return date.getTime();
+Jymin.getTime = function (date) {
+  return (date || new Date()).getTime();
 };
 
 /**
- * Get Unix epoch milliseconds from a date.
- * @return integer: Epoch milliseconds.
+ * Get an ISO-standard date string (even in super duper old browsers).
+ *
+ * @param {Date}    date  Date object (default: now).
+ * @return {String}       ISO date string.
  */
-var getIsoDate = function (
-  date // Date: Date object. (Default: now)
-) {
-  if (!date) {
-    date = new Date();
-  }
+Jymin.getIsoDate = function (date) {
+  date = date || new Date();
   if (date.toISOString) {
     date = date.toISOString();
   }
@@ -276,22 +297,25 @@ var getIsoDate = function (
     // Build an ISO date string manually in really old browsers.
     var utcPattern = /^.*?(\d+) (\w+) (\d+) ([\d:]+).*?$/;
     date = date.toUTCString().replace(utcPattern, function (a, d, m, y, t) {
-      m = zeroFill(date.getMonth(), 2);
-      t += '.' + zeroFill(date.getMilliseconds(), 3);
+      m = Jymin.zeroFill(date.getMonth(), 2);
+      t += '.' + Jymin.zeroFill(date.getMilliseconds(), 3);
       return y + '-' + m + '-' + d + 'T' + t + 'Z';
     });
   }
   return date;
 };
-/*
- * Takes a js date object and returns something in the format of
- * "August 26,2014 at 7:42pm"
+
+/**
+ * Take a date and return something like: "August 26, 2014 at 7:42pm".
+ *
+ * @param  {Object}   date  Date object or constructor argument.
+ * @return {String}         Long formatted date string.
  */
-var formatLongDate = function (date) {
+Jymin.formatLongDate = function (date) {
   var MONTHS = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
-  isDate(date) ? 0 : (date = new Date(+date || date));
+  Jymin.isDate(date) ? 0 : (date = new Date(+date || date));
   var m = MONTHS[date.getMonth()];
   var isAm = true;
   var h = +date.getHours();
@@ -299,14 +323,17 @@ var formatLongDate = function (date) {
   minutes = minutes > 9 ? minutes : "0" + minutes;
   h > 12 ? (isAm = false, h -= 12) : (h === 0 ? h = 12 : 0);
   return m + " " + date.getDate() + ", " + date.getFullYear() + " at " + h +
-    ":" + minutes + (isAm ? "AM" : "PM");
+    ":" + minutes + (isAm ? "am" : "pm");
 }
-/*
- * Takes a js date object and returns something in the format of
- * "8/26/14 7:42pm"
+
+/**
+ * Take a date, and return something like: "8/26/14 7:42pm".
+ *
+ * @param  {Object}   date  Date object or constructor argument.
+ * @return {String}         Short formatted date string.
  */
-var formatShortDate = function (date) {
-  isDate(date) ? 0 : (date = new Date(+date || date));
+Jymin.formatShortDate = function (date) {
+  Jymin.isDate(date) ? 0 : (date = new Date(+date || date));
   var m = date.getMonth() + 1;
   var isAm = true;
   var h = +date.getHours();
@@ -314,59 +341,60 @@ var formatShortDate = function (date) {
   minutes = minutes > 9 ? minutes : "0" + minutes;
   h > 12 ? (isAm = false, h -= 12) : (h === 0 ? h = 12 : 0);
   return m + "/" + date.getDate() + "/" + date.getFullYear() % 100 + " " + h +
-    ":" + minutes + (isAm ? "AM" : "PM");
+    ":" + minutes + (isAm ? "am" : "pm");
 }
 /**
  * An Emitter is an EventEmitter-style object.
  */
-var Emitter = function () {
+Jymin.Emitter = function () {
   // Lazily apply the prototype so that Emitter can minify out if not used.
-  Emitter.prototype = EmitterPrototype;
+  // TODO: Find out if this is still necessary with UglifyJS.
+  Jymin.Emitter.prototype = Jymin.EmitterPrototype;
 };
 
 /**
  * Expose Emitter methods which can be applied lazily.
  */
-var EmitterPrototype = {
+Jymin.EmitterPrototype = {
 
-  _ON: function (event, fn) {
+  _on: function (event, fn) {
     var self = this;
-    var events = self._EVENTS || (self._EVENTS = {});
+    var events = self._events || (self._events = {});
     var listeners = events[event] || (events[event] = []);
     listeners.push(fn);
     return self;
   },
 
-  _ONCE: function (event, fn) {
+  _once: function (event, fn) {
     var self = this;
     function f() {
       fn.apply(self, arguments);
-      self._REMOVE_LISTENER(event, f);
+      self._removeListener(event, f);
     }
-    self._ON(event, f);
+    self._on(event, f);
     return self;
   },
 
-  _EMIT: function (event) {
+  _emit: function (event) {
     var self = this;
-    var listeners = self._LISTENERS(event);
+    var listeners = self._listeners(event);
     var args = Array.prototype.slice.call(arguments, 1);
-    forEach(listeners, function (listener) {
+    Jymin.forEach(listeners, function (listener) {
       listener.apply(self, args);
     });
     return self;
   },
 
-  _LISTENERS: function (event) {
+  _listeners: function (event) {
     var self = this;
-    var events = self._EVENTS || 0;
+    var events = self._events || 0;
     var listeners = events[event] || [];
     return listeners;
   },
 
-  _REMOVE_LISTENER: function (event, fn) {
+  _removeListener: function (event, fn) {
     var self = this;
-    var listeners = self._LISTENERS(event);
+    var listeners = self._listeners(event);
     var i = listeners.indexOf(fn);
     if (i > -1) {
       listeners.splice(i, 1);
@@ -374,9 +402,9 @@ var EmitterPrototype = {
     return self;
   },
 
-  _REMOVE_ALL_LISTENERS: function (event, fn) {
+  _removeAllListeners: function (event, fn) {
     var self = this;
-    var events = self._EVENTS || {};
+    var events = self._events || {};
     if (event) {
       delete events[event];
     }
@@ -392,42 +420,42 @@ var EmitterPrototype = {
 /**
  * Log values to the console, if it's available.
  */
-var error = function () {
-  ifConsole('error', arguments);
+Jymin.error = function () {
+  Jymin.ifConsole('Jymin.error', arguments);
 };
 
 /**
  * Log values to the console, if it's available.
  */
-var warn = function () {
-  ifConsole('warn', arguments);
+Jymin.warn = function () {
+  Jymin.ifConsole('Jymin.warn', arguments);
 };
 
 /**
  * Log values to the console, if it's available.
  */
-var info = function () {
-  ifConsole('info', arguments);
+Jymin.info = function () {
+  Jymin.ifConsole('Jymin.info', arguments);
 };
 
 /**
  * Log values to the console, if it's available.
  */
-var log = function () {
-  ifConsole('log', arguments);
+Jymin.log = function () {
+  Jymin.ifConsole('Jymin.log', arguments);
 };
 
 /**
  * Log values to the console, if it's available.
  */
-var trace = function () {
-  ifConsole('trace', arguments);
+Jymin.trace = function () {
+  Jymin.ifConsole('Jymin.trace', arguments);
 };
 
 /**
  * Log values to the console, if it's available.
  */
-var ifConsole = function (method, args) {
+Jymin.ifConsole = function (method, args) {
   var console = window.console;
   if (console && console[method]) {
     console[method].apply(console, args);
@@ -436,10 +464,7 @@ var ifConsole = function (method, args) {
 /**
  * Iterate over an object's keys, and call a function on each key value pair.
  */
-var forIn = function (
-  object,  // Object*:   The object to iterate over.
-  callback // Function*: The function to call on each pair. `callback(value, key, object)`
-) {
+Jymin.forIn = function (object, callback) {
   if (object) {
     for (var key in object) {
       var result = callback(key, object[key], object);
@@ -453,10 +478,7 @@ var forIn = function (
 /**
  * Iterate over an object's keys, and call a function on each (value, key) pair.
  */
-var forOf = function (
-  object,  // Object*:   The object to iterate over.
-  callback // Function*: The function to call on each pair. `callback(value, key, object)`
-) {
+Jymin.forOf = function (object, callback) {
   if (object) {
     for (var key in object) {
       var result = callback(object[key], key, object);
@@ -468,14 +490,11 @@ var forOf = function (
 };
 
 /**
- * Decorate an object with properties from another object. If the properties
+ * Decorate an object with properties from another object.
  */
-var decorateObject = function (
-  object,     // Object: The object to decorate.
-  decorations // Object: The object to iterate over.
-) {
+Jymin.decorateObject = function (object, decorations) {
   if (object && decorations) {
-    forIn(decorations, function (key, value) {
+    Jymin.forIn(decorations, function (key, value) {
       object[key] = value;
     });
   }
@@ -485,90 +504,87 @@ var decorateObject = function (
 /**
  * Ensure that a property exists by creating it if it doesn't.
  */
-var ensureProperty = function (
-  object,
-  property,
-  defaultValue
-) {
+Jymin.ensureProperty = function (object, property, defaultValue) {
   var value = object[property];
   if (!value) {
     value = object[property] = defaultValue;
   }
   return value;
-};/**
+};
+/**
  * Ensure a value is a string.
  */
-var ensureString = function (
+Jymin.ensureString = function (
   value
 ) {
-  return isString(value) ? value : '' + value;
+  return Jymin.isString(value) ? value : '' + value;
 };
 
 /**
  * Return true if the string contains the given substring.
  */
-var contains = function (
+Jymin.contains = function (
   string,
   substring
 ) {
-  return ensureString(string).indexOf(substring) > -1;
+  return Jymin.ensureString(string).indexOf(substring) > -1;
 };
 
 /**
  * Return true if the string starts with the given substring.
  */
-var startsWith = function (
+Jymin.startsWith = function (
   string,
   substring
 ) {
-  return ensureString(string).indexOf(substring) == 0; // jshint ignore:line
+  return Jymin.ensureString(string).indexOf(substring) == 0; // jshint ignore:line
 };
 
 /**
  * Trim the whitespace from a string.
  */
-var trim = function (
+Jymin.trim = function (
   string
 ) {
-  return ensureString(string).replace(/^\s+|\s+$/g, '');
+  return Jymin.ensureString(string).replace(/^\s+|\s+$/g, '');
 };
 
 /**
  * Split a string by commas.
  */
-var splitByCommas = function (
+Jymin.splitByCommas = function (
   string
 ) {
-  return ensureString(string).split(',');
+  return Jymin.ensureString(string).split(',');
 };
 
 /**
  * Split a string by spaces.
  */
-var splitBySpaces = function (
+Jymin.splitBySpaces = function (
   string
 ) {
-  return ensureString(string).split(' ');
+  return Jymin.ensureString(string).split(' ');
 };
 
 /**
  * Return a string, with asterisks replaced by values from a replacements array.
  */
-var decorateString = function (
+Jymin.decorateString = function (
   string,
   replacements
 ) {
-  string = ensureString(string);
-  forEach(replacements, function(replacement) {
+  string = Jymin.ensureString(string);
+  Jymin.forEach(replacements, function(replacement) {
     string = string.replace('*', replacement);
   });
   return string;
 };
 
 /**
- * Perform a RegExp match, and call a callback on the result;
+ * Perform a RegExp Jymin.match, and call a callback on the result;
   */
-var match = function (
+Jymin.match = function (
   string,
   pattern,
   callback
@@ -582,62 +598,62 @@ var match = function (
 /**
  * Reduce a string to its alphabetic characters.
  */
-var extractLetters = function (
+Jymin.extractLetters = function (
   string
 ) {
-  return ensureString(string).replace(/[^a-z]/ig, '');
+  return Jymin.ensureString(string).replace(/[^a-z]/ig, '');
 };
 
 /**
  * Reduce a string to its numeric characters.
  */
-var extractNumbers = function (
+Jymin.extractNumbers = function (
   string
 ) {
-  return ensureString(string).replace(/[^0-9]/g, '');
+  return Jymin.ensureString(string).replace(/[^0-9]/g, '');
 };
 
 /**
  * Returns a lowercase string.
  */
-var lower = function (
+Jymin.lower = function (
   object
 ) {
-  return ensureString(object).toLowerCase();
+  return Jymin.ensureString(object).toLowerCase();
 };
 
 /**
  * Returns an uppercase string.
  */
-var upper = function (
+Jymin.upper = function (
   object
 ) {
-  return ensureString(object).toUpperCase();
+  return Jymin.ensureString(object).toUpperCase();
 };
 
 /**
  * Return an escaped value for URLs.
  */
-var escape = function (value) {
+Jymin.escape = function (value) {
   return encodeURIComponent(value);
 };
 
 /**
  * Return an unescaped value from an escaped URL.
  */
-var unescape = function (value) {
+Jymin.unescape = function (value) {
   return decodeURIComponent(value);
 };
 
 /**
  * Returns a query string generated by serializing an object and joined using a delimiter (defaults to '&')
  */
-var buildQueryString = function (
+Jymin.buildQueryString = function (
   object
 ) {
   var queryParams = [];
-  forIn(object, function(key, value) {
-    queryParams.push(escape(key) + '=' + escape(value));
+  Jymin.forIn(object, function(key, value) {
+    queryParams.push(Jymin.escape(key) + '=' + Jymin.escape(value));
   });
   return queryParams.join('&');
 };
@@ -645,16 +661,16 @@ var buildQueryString = function (
 /**
  * Return the browser version if the browser name matches or zero if it doesn't.
  */
-var getBrowserVersionOrZero = function (
+Jymin.getBrowserVersionOrZero = function (
   browserName
 ) {
-  var match = new RegExp(browserName + '[ /](\\d+(\\.\\d+)?)', 'i').exec(navigator.userAgent);
-  return match ? +match[1] : 0;
+  match = new RegExp(browserName + '[ /](\\d+(\\.\\d+)?)', 'i').exec(navigator.userAgent);
+  return match ? +Jymin.match[1] : 0;
 };
 /**
  * Return true if a variable is a given type.
  */
-var isType = function (
+Jymin.isType = function (
   value, // mixed:  The variable to check.
   type   // string: The type we're checking for.
 ) {
@@ -664,61 +680,61 @@ var isType = function (
 /**
  * Return true if a variable is undefined.
  */
-var isUndefined = function (
+Jymin.isUndefined = function (
   value // mixed:  The variable to check.
 ) {
-  return isType(value, 'undefined');
+  return Jymin.isType(value, 'undefined');
 };
 
 /**
  * Return true if a variable is boolean.
  */
-var isBoolean = function (
+Jymin.isBoolean = function (
   value // mixed:  The variable to check.
 ) {
-  return isType(value, 'boolean');
+  return Jymin.isType(value, 'boolean');
 };
 
 /**
  * Return true if a variable is a number.
  */
-var isNumber = function (
+Jymin.isNumber = function (
   value // mixed:  The variable to check.
 ) {
-  return isType(value, 'number');
+  return Jymin.isType(value, 'number');
 };
 
 /**
  * Return true if a variable is a string.
  */
-var isString = function (
+Jymin.isString = function (
   value // mixed:  The variable to check.
 ) {
-  return isType(value, 'string');
+  return Jymin.isType(value, 'string');
 };
 
 /**
  * Return true if a variable is a function.
  */
-var isFunction = function (
+Jymin.isFunction = function (
   value // mixed:  The variable to check.
 ) {
-  return isType(value, 'function');
+  return Jymin.isType(value, 'function');
 };
 
 /**
  * Return true if a variable is an object.
  */
-var isObject = function (
+Jymin.isObject = function (
   value // mixed:  The variable to check.
 ) {
-  return isType(value, 'object');
+  return Jymin.isType(value, 'object');
 };
 
 /**
  * Return true if a variable is an instance of a class.
  */
-var isInstance = function (
+Jymin.isInstance = function (
   value,     // mixed:  The variable to check.
   protoClass // Class|: The class we'ere checking for.
 ) {
@@ -728,19 +744,19 @@ var isInstance = function (
 /**
  * Return true if a variable is an array.
  */
-var isArray = function (
+Jymin.isArray = function (
   value // mixed:  The variable to check.
 ) {
-  return isInstance(value, Array);
+  return Jymin.isInstance(value, Array);
 };
 
 /**
  * Return true if a variable is a date.
  */
-var isDate = function (
+Jymin.isDate = function (
   value // mixed:  The variable to check.
 ) {
-  return isInstance(value, Date);
+  return Jymin.isInstance(value, Date);
 };
 /**
  * This file is used in conjunction with Jymin to form the Beams Beams.
@@ -760,7 +776,7 @@ var Beams = function () {
   window.Beams = Beams;
 
   // If we've already decorated the singleton, don't do it again.
-  if (Beams._ON) {
+  if (Beams._on) {
     return Beams;
   }
 
@@ -776,14 +792,14 @@ var Beams = function () {
   var emissions = [];
 
   // When a message is received, its handlers can be looked up by message name.
-  var events = Beams._EVENTS = {};
+  var events = Beams._events = {};
 
   // If onReady gets called more than once, reset events.
-  // When used with D6, calls to "Beams._ON" should be inside onReady events.
+  // When used with D6, calls to "Beams._on" should be inside onReady events.
   var hasRendered = false;
   onReady(function () {
     if (hasRendered) {
-      events = Beams._EVENTS = {connect: onConnect};
+      events = Beams._events = {connect: onConnect};
     }
     hasRendered = true;
   });
@@ -797,7 +813,7 @@ var Beams = function () {
   /**
    * Listen for messages from the server.
    */
-  Beams._ON = function (name, callback) {
+  Beams._on = function (name, callback) {
     //+env:debug
     log('[Beams] Listening for "' + name + '".');
     //-env:debug
@@ -809,15 +825,15 @@ var Beams = function () {
   /**
    * Listen for "connect" messages.
    */
-  Beams._CONNECT = function (callback) {
-    Beams._ON('connect', callback);
+  Beams._connect = function (callback) {
+    Beams._on('connect', callback);
     return Beams;
   };
 
   /**
    * Emit a message to the server via XHR POST.
    */
-  Beams._EMIT = function (name, data) {
+  Beams._emit = function (name, data) {
     data = stringify(data || {}, 1);
 
     //+env:debug
@@ -841,7 +857,7 @@ var Beams = function () {
         }
       );
     }
-    if (Beams._ID) {
+    if (Beams._id) {
       send();
     }
     else {
@@ -907,8 +923,8 @@ var Beams = function () {
    * When we connect, set the client ID.
    */
   function onConnect(data) {
-    Beams._ID = data.id;
-    endpointUrl = serverUrl + '?id=' + Beams._ID;
+    Beams._id = data.id;
+    endpointUrl = serverUrl + '?id=' + Beams._id;
     //+env:debug
     log('[Beams] Set endpoint URL to "' + endpointUrl + '".');
     //-env:debug
@@ -920,7 +936,7 @@ var Beams = function () {
     emissions = [];
   }
 
-  Beams._CONNECT(onConnect);
+  Beams._connect(onConnect);
 
   // Start polling.
   poll();
