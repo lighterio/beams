@@ -1,4 +1,4 @@
-var Client = require(__dirname + '/lib/_client');
+var Client = require(__dirname + '/lib/client');
 
 // TODO: Scale Beams servers with a hash ring module.
 
