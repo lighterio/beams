@@ -1,102 +1,64 @@
 /**
- * This file is used in conjunction with Jymin to form the Beams Beams.
+ * This file is used in conjunction with Jymin to form the Beams client.
  *
  * If you're already using Jymin, you can use this file with it.
- * Otherwise use ../beams-Beams.js which includes required Jymin functions.
+ * Otherwise use ../beams-client.js which includes required Jymin functions.
+ *
+ * @use jymin/jymin.js
  */
 
-var BEAMS_RETRY_TIMEOUT = 1e3;
-
-/**
- * "Beams" is a singleton function, on the window, decorated as an object.
- */
-var Beams = function () {
-
-  // Once Beams is invoked, it is accessible from outside, even when minified.
-  window.Beams = Beams;
-
-  // If we've already decorated the singleton, don't do it again.
-  if (Beams._on) {
-    return Beams;
-  }
+var Beams = (function () {
 
   //+env:debug
-  log('[Beams] Initializing client.');
+  Jymin.log('[Beams] Initializing client.');
   //-env:debug
 
   // The beams server listens for GET and POST requests at /beam.
   var serverUrl = '/beam';
   var endpointUrl = serverUrl;
+  var retryTimeout = 1e3;
 
   // Until we connect, queue emissions.
   var emissions = [];
 
-  // When a message is received, its handlers can be looked up by message name.
-  var events = Beams._events = {};
-
-  // If onReady gets called more than once, reset events.
-  // When used with D6, calls to "Beams._on" should be inside onReady events.
-  var hasRendered = false;
-  onReady(function () {
-    if (hasRendered) {
-      events = Beams._events = {connect: onConnect};
-    }
-    hasRendered = true;
-  });
-
-  // Add the Emitter prototype methods to Beams.
-  decorateObject(Beams, EmitterPrototype);
+  // The Beams object is an event emitter.
+  var Beams = new Jymin.Emitter();
 
   // Keep a count of emissions so the server can de-duplicate.
   var n = 0;
 
-  /**
-   * Listen for messages from the server.
-   */
-  Beams._on = function (name, callback) {
-    //+env:debug
-    log('[Beams] Listening for "' + name + '".');
-    //-env:debug
-    var list = events[name] || (events[name] = []);
-    push(list, callback);
-    return Beams;
-  };
-
-  /**
-   * Listen for "connect" messages.
-   */
-  Beams._connect = function (callback) {
-    Beams._on('connect', callback);
-    return Beams;
-  };
+  // When we receive something from the server, emit it internally.
+  Beams._receive = Beams._emit;
 
   /**
    * Emit a message to the server via XHR POST.
    */
   Beams._emit = function (name, data) {
-    data = stringify(data || {}, 1);
+    data = Jymin.stringify(data || {});
 
     //+env:debug
-    log('[Beams] Emitting "' + name + '": ' + data + '.');
+    Jymin.log('[Beams] Emitting "' + name + '": ' + data + '.');
     //-env:debug
 
     // The server can use the count for sequencing.
     n++;
+
     // Try to emit data to the server.
     function send() {
-      getResponse(
+      Jymin.getResponse(
         // Send the event name and emission number as URL params.
-        endpointUrl + '&m=' + escape(name) + '&n=' + n,
+        endpointUrl + '&m=' + Jymin.escape(name) + '&n=' + n,
         // Send the message data as POST body so we're not size-limited.
-        'd=' + escape(data),
+        'd=' + Jymin.escape(data),
         // On success, there's nothing we need to do.
-        doNothing,
+        Jymin.doNothing,
         // On failure, retry.
         function () {
-          setTimeout(send, BEAMS_RETRY_TIMEOUT);
+          setTimeout(send, retryTimeout);
         }
       );
     }
+
     if (Beams._id) {
       send();
     }
@@ -107,79 +69,60 @@ var Beams = function () {
   };
 
   /**
+   * When we connect, set the client ID.
+   */
+  Beams._on('connect', function (data) {
+    Beams._id = data.id;
+    endpointUrl = serverUrl + '?id=' + Beams._id;
+    //+env:debug
+    Jymin.log('[Beams] Set endpoint URL to "' + endpointUrl + '".');
+    //-env:debug
+
+    // Now that we have the client ID, we can emit anything we had queued.
+    Jymin.forEach(emissions, function (send) {
+      // TODO: Send queued data in a single request.
+      send();
+    });
+    emissions = [];
+  });
+
+  /**
    * Poll for new messages.
    */
   function poll() {
     //+env:debug
-    log('[Beams] Polling for messages at "' + endpointUrl + '".');
+    Jymin.log('[Beams] Polling for messages at "' + endpointUrl + '".');
     //-env:debug
-    getResponse(endpointUrl, onSuccess, onFailure);
+    Jymin.getResponse(endpointUrl, onSuccess, onFailure);
   }
 
   /**
    * On success, iterate through messages, triggering events.
    */
   function onSuccess(messages) {
-    forEach(messages, function (message) {
-      var name = message[0];
-      var data = message[1];
-      triggerCallbacks(name, data);
+    Jymin.forEach(messages, function (parts) {
+      var name = parts[0];
+      var data = parts[1];
+      Beams._receive(name, data);
     });
-    // Poll again.
-    addTimeout(Beams, poll, 0);
+    // Start polling again.
+    Jymin.setTimer(Beams, poll, 0);
   }
 
   /**
    * On failure, log if in a debug environment, and try again later.
    */
-  function onFailure(response) {
+  function onFailure() {
     // Try again later.
-    addTimeout(Beams, poll, BEAMS_RETRY_TIMEOUT);
+    Jymin.setTimer(Beams, poll, retryTimeout);
     //+env:debug
-    error('[Beams] Failed to connect to "' + endpointUrl + '".');
+    Jymin.error('[Beams] Failed to connect to "' + endpointUrl + '".');
     //-env:debug
   }
-
-  /**
-   * Trigger any matching events with received data.
-   */
-  function triggerCallbacks(name, data) {
-    //+env:debug
-    log('[Beams] Received "' + name + '": ' + stringify(data) + '.');
-    //-env:debug
-    forEach(events[name], function (callback) {
-      if (isFunction(callback)) {
-        callback.call(Beams, data);
-      }
-      else {
-        //+env:debug
-        error('[Beams] Handler for "' + name + '" is not a function: ' + stringify(callback) + '.');
-        //-env:debug
-      }
-    });
-  }
-
-  /**
-   * When we connect, set the client ID.
-   */
-  function onConnect(data) {
-    Beams._id = data.id;
-    endpointUrl = serverUrl + '?id=' + Beams._id;
-    //+env:debug
-    log('[Beams] Set endpoint URL to "' + endpointUrl + '".');
-    //-env:debug
-
-    // Now that we have the client ID, we can emit anything we had queued.
-    forEach(emissions, function (send) {
-      send();
-    });
-    emissions = [];
-  }
-
-  Beams._connect(onConnect);
 
   // Start polling.
   poll();
 
   return Beams;
-};
+
+})();

@@ -1,0 +1,16 @@
+{
+  "indent": 2,
+  "strict": false,
+  "camelcase": true,
+  "browser": true,
+  "node": true,
+  "quotmark": false,
+  "loopfunc": true,
+  "globals": {
+    "Jymin": false
+  },
+  "unused": {
+    "Beams": false
+  }
+}
+

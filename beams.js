@@ -4,13 +4,6 @@ var Client = require(__dirname + '/lib/client');
 
 var beams = exports;
 
-// Expose the version number, but only load package JSON if it's requested.
-Object.defineProperty(beams, 'version', {
-  get: function () {
-    return require(__dirname + '/package.json').version;
-  }
-});
-
 // We can iterate over Beams clients.
 beams.clients = {};
 
@@ -147,3 +140,17 @@ beams.each = function (callback) {
   }
   return beams;
 };
+
+// Expose the version number, but only load package JSON if it's requested.
+Object.defineProperty(beams, 'version', {
+  get: function () {
+    return require(__dirname + '/package.json').version;
+  }
+});
+
+/**
+ * Expose the paths to Beams's front-end scripts.
+ */
+beams.jymin = __dirname + '/scripts/beams-jymin.js';
+beams.client = __dirname + '/beams-client.js';
+beams.clientMin = __dirname + '/beams-client.min.js';
