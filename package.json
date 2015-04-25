@@ -27,7 +27,7 @@
     "node": ">=0.2.6"
   },
   "scripts": {
-    "build": "./node_modules/jymin/jymin.js",
+    "build": "./node_modules/jymin/jymin-build.js",
     "test": "./node_modules/exam/exam.js",
     "cover": "./node_modules/exam/exam-cover.js",
     "report": "open coverage/lcov-report/index.html",
