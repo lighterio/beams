@@ -14,9 +14,12 @@ var Beams = (function () {
   //-env:debug
 
   // The beams server listens for GET and POST requests at /beam.
-  var serverUrl = '/beam';
+  var serverUrl = (window._href || '') + '/beam';
   var endpointUrl = serverUrl;
-  var retryTimeout = 1e3;
+  var retryMin = 1e3;
+  var retryMax = 6e4;
+  var retryTimeout = retryMin;
+  var retryBackoff = 2;
 
   // Until we connect, queue emissions.
   var emissions = [];
@@ -51,9 +54,12 @@ var Beams = (function () {
         // Send the message data as POST body so we're not size-limited.
         'd=' + Jymin.escape(data),
         // On success, there's nothing we need to do.
-        Jymin.doNothing,
+        function () {
+          retryTimeout = retryMin;
+        },
         // On failure, retry.
         function () {
+          retryTimeout = Math.min(retryTimeout * retryBackoff, retryMax);
           setTimeout(send, retryTimeout);
         }
       );
@@ -100,6 +106,7 @@ var Beams = (function () {
    * On success, iterate through messages, triggering events.
    */
   function onSuccess(messages) {
+    retryTimeout = retryMin;
     Jymin.forEach(messages, function (parts) {
       var name = parts[0];
       var data = parts[1];
@@ -114,6 +121,7 @@ var Beams = (function () {
    */
   function onFailure() {
     // Try again later.
+    retryTimeout = Math.min(retryTimeout * retryBackoff, retryMax);
     Jymin.setTimer(Beams, poll, retryTimeout);
     //+env:debug
     Jymin.error('[Beams] Failed to connect to "' + endpointUrl + '".');
