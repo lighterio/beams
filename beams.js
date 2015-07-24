@@ -158,7 +158,14 @@ beams.each = function (callback) {
  * Allow clients to log to the server.
  */
 beams.on('log', function (data) {
-  beams.log.log(data)
+  if (typeof data === 'string') {
+    data = data.replace(/file:\/\/\/android_asset\//g, process.cwd() + '/platforms/android/assets/')
+  }
+  if (/^Error:/.test(data)) {
+    beams.log.error(data)
+  } else {
+    beams.log.log(data)
+  }
 })
 
 // Expose the version number, but only load package JSON if it's requested.

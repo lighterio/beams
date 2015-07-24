@@ -17,7 +17,6 @@ Beams.retryMin = 1e3
 Beams.retryMax = 6e4
 Beams.retryTimeout = Beams.retryMin
 Beams.retryBackoff = 2
-Beams.eventPrefix = 'beam:'
 
 // Until we connect, queue emissions.
 Beams.emissions = []
@@ -66,7 +65,7 @@ Beams.emit = function (name, data) {
 }
 
 Beams.on = function (name, fn) {
-  Jymin.on(Beams.eventPrefix + name, function (element, event) {
+  Jymin.on(Beams, name, function (element, event) {
     fn(event.data)
   })
 }
@@ -90,6 +89,14 @@ Beams.on('connect', function (data) {
 })
 
 Beams.log = function (data) {
+  if (!data) {
+    try {
+      throw new Error('No data to beam.')
+    }
+    catch (e) {
+      data = e.stack
+    }
+  }
   Beams.emit('log', data)
 }
 
@@ -111,7 +118,7 @@ Beams.onSuccess = function (messages) {
   Jymin.forEach(messages, function (parts) {
     var name = parts[0]
     var data = parts[1]
-    Jymin.trigger({type: Beams.eventPrefix + name, data: data})
+    Jymin.trigger(Beams, {type: name, data: data})
   })
   // Start polling again.
   Jymin.setTimer(Beams, Beams.poll, 0)
