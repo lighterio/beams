@@ -1,11 +1,11 @@
 {
   "name": "beams",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "A long-polling Node.js server and client",
   "dependencies": {},
   "devDependencies": {
-    "jymin": "git+https://github.com/zerious/jymin.git",
-    "exam": "git+https://github.com/zerious/exam.git",
+    "jymin": "0.5.0",
+    "exam": "0.3.0",
     "express": "4.4.4"
   },
   "keywords": [
