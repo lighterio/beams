@@ -82,6 +82,7 @@ function getClient (request, response) {
 
   // If the client already exists, wait for data to send to it.
   if (client) {
+    client.last = Date.now()
     client.wait(request, response)
 
   // If the client doesn't exist, create it.
@@ -160,12 +161,35 @@ beams.each = function (callback) {
 beams.on('log', function (data) {
   if (typeof data === 'string') {
     data = data.replace(/file:\/\/\/android_asset\//g, process.cwd() + '/platforms/android/assets/')
+    data = data.replace(/\bhttp:\/\/[^\/]*/g, '')
   }
   if (/^Error:/.test(data)) {
     beams.log.error(data)
   } else {
     beams.log.log(data)
   }
+})
+
+/**
+ * Allow clients to remove themselves from the server.
+ */
+beams.on('reload', function (data, client) {
+  client = client || 0
+  var id = client.id || 0
+  var platform = client.platform || 'web'
+  beams.log.warn('Unloading ' + platform + ' client ' + id)
+  delete beams.clients[id]
+})
+
+/**
+ * Allow clients to remove themselves from the server.
+ */
+beams.on('unload', function (data, client) {
+  client = client || 0
+  var id = client.id || 0
+  var platform = client.platform || 'web'
+  beams.log.warn('Unloading ' + platform + ' client ' + id)
+  delete beams.clients[id]
 })
 
 // Expose the version number, but only load package JSON if it's requested.

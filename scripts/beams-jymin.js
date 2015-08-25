@@ -13,10 +13,12 @@ var Beams = {}
 // The beams server listens for GET and POST requests at /beam.
 Beams.serverUrl = (window._href || '') + '/beam'
 Beams.endpointUrl = Beams.serverUrl
+
+// On disconnect, start retrying once a second, and back off to once a minute.
 Beams.retryMin = 1e3
 Beams.retryMax = 6e4
-Beams.retryTimeout = Beams.retryMin
 Beams.retryBackoff = 2
+Beams.retryTimeout = Beams.retryMin
 
 // Until we connect, queue emissions.
 Beams.emissions = []
@@ -64,10 +66,17 @@ Beams.emit = function (name, data) {
   return Beams
 }
 
-Beams.on = function (name, fn) {
-  Jymin.on(Beams, name, function (element, event) {
+/**
+ * Accept event handlers, and run them through Jymin.
+ *
+ * @param  {String}   type  Type of event to handle.
+ * @param  {Function} fn    Handler for that type of event.
+ */
+Beams.on = function (type, fn) {
+  Jymin.on(Beams, type, function (element, event) {
     fn(event.data)
   })
+  return Beams
 }
 
 /**
@@ -88,16 +97,16 @@ Beams.on('connect', function (data) {
   Beams.emissions = []
 })
 
+/**
+ * Allow clients to submit log messages to the server.
+ *
+ * @param  {Object} data  The data to log
+ */
 Beams.log = function (data) {
-  if (!data) {
-    try {
-      throw new Error('No data to beam.')
-    }
-    catch (e) {
-      data = e.stack
-    }
+  if (data) {
+    Beams.emit('log', data)
   }
-  Beams.emit('log', data)
+  return Beams
 }
 
 /**
@@ -114,14 +123,22 @@ Beams.poll = function () {
  * On success, iterate through messages, triggering events.
  */
 Beams.onSuccess = function (messages) {
+
+  // Reset to the minimum retry delay.
   Beams.retryTimeout = Beams.retryMin
+
+  // Trigger events for all messages received from the server.
   Jymin.forEach(messages, function (parts) {
-    var name = parts[0]
+    var type = parts[0]
     var data = parts[1]
-    Jymin.trigger(Beams, {type: name, data: data})
+    Jymin.trigger(Beams, {type: type, data: data})
   })
+
   // Start polling again.
   Jymin.setTimer(Beams, Beams.poll, 0)
+
+  // Signal that Beams is still working.
+  Jymin.trigger(Beams, 'success')
 }
 
 /**
@@ -137,7 +154,20 @@ Beams.onFailure = function () {
   var backed = Beams.retryTimeout * Beams.retryBackoff
   Beams.retryTimeout = Math.min(backed, max)
   Jymin.setTimer(Beams, Beams.poll, Beams.retryTimeout)
+
+  // Signal that Beams is not working at the moment.
+  Jymin.trigger(Beams, 'failure')
 }
+
+// When the page unloads, tell the server to remove this client.
+Jymin.on(window, 'beforeunload', function () {
+  Beams.emit('unload')
+})
 
 // Start polling.
 Beams.poll()
+
+// Allow the server to tell clients to reload themselves.
+Beams.on('reload', function () {
+  location.reload()
+})
