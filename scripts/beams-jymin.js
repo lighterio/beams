@@ -41,7 +41,7 @@ Beams.emit = function (name, data) {
 
   // Try to emit data to the server.
   function send () {
-    Jymin.getResponse(
+    Jymin.get(
       // Send the event name and emission number as URL params.
       Beams.endpointUrl + '&m=' + Jymin.escape(name) + '&n=' + Beams.emissionNumber,
       // Send the message data as POST body so we're not size-limited.
@@ -73,10 +73,7 @@ Beams.emit = function (name, data) {
  * @param  {Function} fn    Handler for that type of event.
  */
 Beams.on = function (type, fn) {
-  Jymin.on(Beams, type, function (element, event) {
-    fn(event.data)
-  })
-  return Beams
+  Jymin.on(Beams, type, fn)
 }
 
 /**
@@ -90,7 +87,7 @@ Beams.on('connect', function (data) {
   //-env:debug
 
   // Now that we have the client ID, we can emit anything we had queued.
-  Jymin.forEach(Beams.emissions, function (send) {
+  Jymin.each(Beams.emissions, function (send) {
     // TODO: Send queued data in a single request.
     send()
   })
@@ -116,35 +113,35 @@ Beams.poll = function () {
   //+env:debug
   Jymin.log('[Beams] Polling for messages at "' + Beams.endpointUrl + '".')
   //-env:debug
-  Jymin.getResponse(Beams.endpointUrl, Beams.onSuccess, Beams.onFailure)
+  Jymin.get(Beams.endpointUrl, Beams.ok, Beams.fail)
 }
 
 /**
  * On success, iterate through messages, triggering events.
  */
-Beams.onSuccess = function (messages) {
+Beams.ok = function (messages) {
 
   // Reset to the minimum retry delay.
   Beams.retryTimeout = Beams.retryMin
 
   // Trigger events for all messages received from the server.
-  Jymin.forEach(messages, function (parts) {
+  Jymin.each(messages, function (parts) {
     var type = parts[0]
     var data = parts[1]
-    Jymin.trigger(Beams, {type: type, data: data})
+    Jymin.emit(type, Beams, data)
   })
 
   // Start polling again.
   Jymin.setTimer(Beams, Beams.poll, 0)
 
-  // Signal that Beams is still working.
-  Jymin.trigger(Beams, 'success')
+  // Signal that Beams is still connected.
+  Jymin.emit('_online')
 }
 
 /**
  * On failure, log if in a debug environment, and try again later.
  */
-Beams.onFailure = function () {
+Beams.fail = function () {
   //+env:debug
   Jymin.error('[Beams] Failed to connect to "' + Beams.endpointUrl + '".')
   //-env:debug
@@ -155,8 +152,8 @@ Beams.onFailure = function () {
   Beams.retryTimeout = Math.min(backed, max)
   Jymin.setTimer(Beams, Beams.poll, Beams.retryTimeout)
 
-  // Signal that Beams is not working at the moment.
-  Jymin.trigger(Beams, 'failure')
+  // Signal that Beams is not connected for now.
+  Jymin.emit('_offline')
 }
 
 // When the page unloads, tell the server to remove this client.
