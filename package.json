@@ -1,11 +1,14 @@
 {
   "name": "beams",
   "version": "0.2.1",
-  "description": "A long-polling Node.js server and client",
-  "dependencies": {},
+  "description": "A long-polling Node.js server and client.",
+  "dependencies": {
+    "lighter-json": "^1.0.2",
+    "lighter-type": "^2.2.1"
+  },
   "devDependencies": {
-    "jymin": ">=0.5.1",
-    "exam": ">=0.3.2",
+    "cute": ">=0.5.1",
+    "exam": "^1.4.5",
     "express": "4.4.4"
   },
   "keywords": [
@@ -24,14 +27,14 @@
   ],
   "main": "beams.js",
   "engines": {
-    "node": ">=0.2.6"
+    "node": ">=0.8.28"
   },
   "scripts": {
-    "build": "./node_modules/jymin/jymin-build.js",
+    "build": "./node_modules/cute/cute-build.js",
     "test": "./node_modules/exam/exam.js",
     "cover": "./node_modules/exam/exam-cover.js",
     "report": "open coverage/lcov-report/index.html",
-    "coveralls": "./node_modules/exam/exam-coveralls.js"
+    "bench": "./node_modules/exam/exam.js test/bench"
   },
   "repository": "https://github.com/lighterio/beams.git",
   "bugs": "https://github.com/lighterio/beams/issues",

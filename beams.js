@@ -1,10 +1,8 @@
-var Client = require(__dirname + '/lib/client')
-var Type = require(__dirname + '/common/object/type')
+var Type = require('lighter-type')
+var stringify = require('lighter-json').scriptify
 
-// TODO: Scale Beams servers with a hash ring module.
-var beams = module.exports = function (config) {
-  Type.decorate(beams, config)
-  beams.setServer(config.server)
+// TODO: Scale to many servers.
+var beams = module.exports = function () {
   return beams
 }
 
@@ -31,7 +29,6 @@ beams.setLog = function (log) {
  * Accept an Express-like server and make it a Beams server as well.
  */
 beams.setServer = function (server) {
-
   /**
    * Accept a client's long polling request.
    */
@@ -173,17 +170,6 @@ beams.on('log', function (data) {
 /**
  * Allow clients to remove themselves from the server.
  */
-beams.on('reload', function (data, client) {
-  client = client || 0
-  var id = client.id || 0
-  var platform = client.platform || 'web'
-  beams.log.warn('Unloading ' + platform + ' client ' + id)
-  delete beams.clients[id]
-})
-
-/**
- * Allow clients to remove themselves from the server.
- */
 beams.on('unload', function (data, client) {
   client = client || 0
   var id = client.id || 0
@@ -192,16 +178,81 @@ beams.on('unload', function (data, client) {
   delete beams.clients[id]
 })
 
-// Expose the version number, but only load package JSON if it's requested.
-Object.defineProperty(beams, 'version', {
-  get: function () {
-    return require(__dirname + '/package.json').version
-  }
-})
-
 /**
  * Expose the paths to Beams's front-end scripts.
  */
-beams.jymin = __dirname + '/scripts/beams-jymin.js'
+beams.cute = __dirname + '/scripts/beams-cute.js'
 beams.client = __dirname + '/beams-client.js'
 beams.clientMin = __dirname + '/beams-client.min.js'
+
+/**
+ * A Client object gets instantiated for each client that connects.
+ */
+var Client = Type.extend({
+
+  /**
+   * Create a new client.
+   */
+  init: function (request, response) {
+    this.id = 'B' + (Math.random() * 1e18).toString(36)
+    this.buffer = ''
+    this.callbacks = {}
+    this.wait(request, response)
+    this.emit('connect', {id: this.id})
+  },
+
+  /**
+   * Set a timeout to restart polling.
+   */
+  resetTimeout: function () {
+    var self = this
+    var duration = require('../beams').pollTimeout
+    clearTimeout(this.timeout)
+    this.timeout = setTimeout(function () {
+      self.emit('timeout', duration)
+    }, duration)
+  },
+
+  /**
+   * Wait for messages.
+   */
+  wait: function (request, response) {
+    this.request = request
+    this.response = response
+    this.resetTimeout()
+    if (this.buffer) {
+      this.emit()
+    }
+  },
+
+  /**
+   * Emit a message with some data.
+   */
+  emit: function (name, data) {
+    // If there's a new emission, add it to the buffer.
+    if (name) {
+      this.buffer += (this.buffer ? ',' : '') + stringify([name, data])
+    }
+    // If we can send the buffer, send it now.
+    // Otherwise, it will be sent when we reconnect.
+    var response = this.response
+    if (response) {
+      if (!response._header) {
+        response.statusCode = 200
+        response.setHeader('content-type', 'application/json')
+        response.setHeader('access-control-allow-origin', '*')
+      }
+      response.end('[' + this.buffer + ']')
+      this.buffer = ''
+      this.disconnect()
+    }
+  },
+
+  /**
+   * Disconnect the client.
+   */
+  disconnect: function () {
+    this.request = this.response = null
+  }
+
+})

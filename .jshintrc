@@ -8,7 +8,7 @@
   "loopfunc": true,
   "asi": true,
   "globals": {
-    "Jymin": false
+    "Cute": false
   },
   "unused": {
     "Beams": false

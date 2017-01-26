@@ -1,9 +1,9 @@
-var beams = require('../beams')
+/* global describe beforeEach it is */
 
+var beams = require('../beams')
 var server, request, response
 
 describe('Beams', function () {
-
   beforeEach(function () {
     server = {
       get: function (path, callback) {
@@ -19,7 +19,7 @@ describe('Beams', function () {
     }
     response = {
       headers: {},
-      setHeader: function(name, value) {
+      setHeader: function (name, value) {
         this.headers[name] = value
       },
       query: {},
@@ -33,7 +33,7 @@ describe('Beams', function () {
   })
 
   it('.setServer', function () {
-      beams.setServer(server)
+    beams.setServer(server)
   })
 
   it('.on', function () {
@@ -79,10 +79,11 @@ describe('Beams', function () {
 
   it('.connect', function () {
     var connected = false
-    beams.connect(function() {
+    beams.connect(function () {
       connected = true
     })
     server._get(request, response)
+    is(connected, true)
   })
 
   it('.emit', function () {
@@ -145,5 +146,4 @@ describe('Beams', function () {
     server._get(request, response)
     setTimeout(done, 10)
   })
-
 })
