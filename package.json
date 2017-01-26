@@ -7,7 +7,7 @@
     "lighter-type": "^2.2.1"
   },
   "devDependencies": {
-    "cute": ">=0.5.1",
+    "cute": "^0.0.2",
     "exam": "^1.4.5",
     "express": "4.4.4"
   },
